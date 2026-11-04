@@ -2,41 +2,55 @@
 <html lang="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Jaktlogg</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#eef1ec;color:#1f2a1f}
-.app{max-width:390px;margin:0 auto;min-height:100vh;background:#fff;padding:16px 16px 80px;position:relative}
-h1{margin:0 0 4px;color:#2f5d34;font-size:26px}h2{font-size:16px;margin:18px 0 8px;display:flex;justify-content:space-between}
-.btn{display:block;width:100%;padding:12px;border:0;border-radius:10px;background:#2f5d34;color:#fff;font-size:16px;cursor:pointer}
-.danger{background:#a33}.sec{background:#888}
-label{display:block;font-size:14px;font-weight:600;margin-top:12px}
-input,select,textarea{width:100%;padding:10px;font-size:16px;border:1px solid #bbb;border-radius:8px;margin-top:4px;font-family:inherit}
-#preview{width:100%;max-height:220px;object-fit:cover;border-radius:8px;display:none;margin-top:8px}
-.empty{text-align:center;color:#667;padding:40px 10px;border:2px dashed #ccd;border-radius:12px;margin:16px 0}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{border-radius:10px;overflow:hidden;background:#f4f6f2;cursor:pointer}
-.card img,.ph{width:100%;height:110px;object-fit:cover;display:block;background:#cfd8c8}.card div{padding:6px 8px;font-size:14px}.card small{color:#667}
-.cnt{background:#2f5d34;color:#fff;border-radius:10px;padding:1px 8px;font-size:13px}
-.seg{display:flex;background:#e4e9e0;border-radius:10px;padding:3px;margin-top:10px}.seg button{flex:1;border:0;background:none;padding:8px;border-radius:8px;font-size:14px}.seg .on{background:#fff;font-weight:600}
-.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:390px;display:flex;background:#fff;border-top:1px solid #ddd}
-.tabs button{flex:1;border:0;background:none;padding:12px;font-size:15px;color:#667}.tabs .on{color:#2f5d34;font-weight:700}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center}.modal.open{display:flex}
-.sheet{background:#fff;width:100%;max-width:390px;border-radius:16px 16px 0 0;padding:16px;max-height:90vh;overflow:auto}.sheet img{width:100%;border-radius:8px}
-.hide{display:none}.muted{color:#667;font-size:14px}
+:root{--g:#7fb069;--gd:#4f7f3a;--t:#eef3ea;--m:#b7c4b0;--card:rgba(20,28,22,.62);--line:rgba(255,255,255,.12)}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,"Helvetica Neue",Arial,sans-serif;color:var(--t);line-height:1.4;
+background:linear-gradient(180deg,rgba(8,14,10,.55),rgba(8,14,10,.88) 55%,rgba(8,14,10,.96)),url(assets/bg.jpg) center/cover fixed #121a14;min-height:100vh}
+.app{max-width:390px;margin:0 auto;min-height:100vh;padding:0 16px 96px}
+header{position:sticky;top:0;z-index:5;margin:0 -16px;padding:18px 16px 14px;background:linear-gradient(180deg,rgba(8,14,10,.85),rgba(8,14,10,0));backdrop-filter:blur(6px)}
+h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.sub{color:var(--m);font-size:14px;margin-top:2px}
+h2{font-size:17px;font-weight:700;margin:22px 0 10px;display:flex;justify-content:space-between;align-items:center}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.btn{display:block;width:100%;padding:14px;border:0;border-radius:14px;background:linear-gradient(180deg,var(--g),var(--gd));color:#0d160e;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(79,127,58,.4)}
+.danger{background:#c0483f;color:#fff;box-shadow:none}.sec{background:rgba(255,255,255,.14);color:var(--t);box-shadow:none}
+label{display:block;font-size:13px;font-weight:600;color:var(--m);margin-top:14px;text-transform:uppercase;letter-spacing:.04em}
+input,select,textarea{width:100%;padding:12px;font-size:16px;color:var(--t);background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:12px;margin-top:6px;font-family:inherit;text-transform:none;letter-spacing:0}
+input::placeholder,textarea::placeholder{color:#8b998a}select option{color:#000}input:focus,select,textarea:focus{outline-color:var(--g)}
+input[type=file]{padding:10px}input[type=date]{color-scheme:dark}
+#preview{width:100%;max-height:220px;object-fit:cover;border-radius:12px;display:none;margin-top:10px}
+.empty{text-align:center;color:var(--m);padding:40px 16px;border:1.5px dashed rgba(255,255,255,.25);border-radius:18px;margin:18px 0;background:var(--card);backdrop-filter:blur(10px)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);cursor:pointer;backdrop-filter:blur(12px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.card img,.ph{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#2a3a2c}
+.card div{padding:8px 10px 10px;font-size:14px}.card small{color:var(--m);display:block}.card .pin{padding:2px 0 0;font-size:12px;color:var(--g);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cnt{background:var(--g);color:#0d160e;border-radius:999px;padding:1px 10px;font-size:13px;font-weight:700}
+.seg{display:flex;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:12px;padding:3px;margin-top:12px}
+.seg button{flex:1;border:0;background:none;color:var(--m);padding:9px;border-radius:9px;font-size:14px;font-family:inherit}.seg .on{background:rgba(255,255,255,.92);color:#13200f;font-weight:700}
+.tabs{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:366px;display:flex;gap:4px;padding:5px;background:rgba(14,20,15,.82);border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(16px);box-shadow:0 8px 30px rgba(0,0,0,.45);z-index:6}
+.tabs button{flex:1;border:0;background:none;padding:11px;font-size:15px;color:var(--m);border-radius:13px;font-family:inherit}.tabs .on{color:#0d160e;background:var(--g);font-weight:700}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:9}.modal.open{display:flex}
+.sheet{background:#18221a;color:var(--t);width:100%;max-width:390px;border-radius:22px 22px 0 0;padding:18px;max-height:90vh;overflow:auto;border-top:1px solid var(--line)}.sheet img{width:100%;border-radius:14px}
+.sheet p{margin:6px 0;color:var(--m)}.sheet p b{color:var(--t)}
+.hide{display:none}.credit{text-align:center;font-size:11px;color:#8b998a;margin:24px 0 0}.credit a{color:#a9bba4}
 </style></head><body><div class="app">
-<h1>Jaktlogg</h1>
+<header><h1>🦌 Jaktlogg</h1><div class="sub" id="hsub"></div></header>
 <section id="s-ny">
-<div class="muted">Ny fangst</div>
+<div class="panel"><h2 style="margin-top:0">Ny fangst</h2>
 <form id="f">
 <label>Bilde<input type="file" id="photo" accept="image/*"></label><img id="preview" alt="Forhåndsvisning">
 <label>Art<select id="species"></select></label>
 <input id="other" class="hide" placeholder="Skriv art">
 <label>Dato<input type="date" id="date" required></label>
-<label>Jaktområde (valgfritt)<input id="area" placeholder="f.eks. Trollheimen"></label>
+<label>Sted (valgfritt)<input id="sted" placeholder="f.eks. Trollheimen eller «ved Storvatnet»"></label>
 <label>Notater (valgfritt)<textarea id="notes" rows="3"></textarea></label>
 <button class="btn" style="margin-top:16px">Lagre</button>
-</form></section>
+</form></div></section>
 <section id="s-oversikt" class="hide">
-<label>Sesong<select id="season"></select></label>
-<div class="seg"><button id="g-art" class="on">Per art</button><button id="g-mnd">Per måned</button></div>
+<div class="panel" style="padding:12px 14px"><label style="margin-top:0">Sesong<select id="season"></select></label>
+<div class="seg"><button id="g-art" class="on">Per art</button><button id="g-mnd">Per måned</button></div></div>
 <div id="list"></div></section>
+<p class="credit">Bakgrunn: «River in the heart of Trollheimen mountains», Jakub Fryš, <a href="https://commons.wikimedia.org/wiki/File:River_in_the_heart_of_Trollheimen_mountains.jpg">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a></p>
 <nav class="tabs"><button id="t-ny" class="on">+ Ny fangst</button><button id="t-oversikt">Oversikt</button></nav>
 </div>
 <div class="modal" id="m"><div class="sheet" id="detail"></div></div>
@@ -45,7 +59,7 @@ const K='jaktlogg.entries',$=id=>document.getElementById(id),esc=s=>String(s||''
 const ARTER=['Elg','Hjort','Rådyr','Villrein','Rype','Hare','Storfugl','Orrfugl','Jerpe','Rev','Gaupe','Ender','Gjess','Annet'];
 const MND=['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
 let photo='',group='art';
-const load=()=>JSON.parse(localStorage.getItem(K)||'[]'),save=a=>localStorage.setItem(K,JSON.stringify(a));
+const load=()=>JSON.parse(localStorage.getItem(K)||'[]').map(e=>{if(e.sted==null){e.sted=e.area||'';delete e.area}return e}),save=a=>localStorage.setItem(K,JSON.stringify(a));
 const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 // Sesong: 1. august – 31. juli
 const seasonOf=d=>{const[y,m]=d.split('-').map(Number);return m>=8?y:y-1};
@@ -65,20 +79,21 @@ function render(){
  const g={};e.forEach(x=>{const k=group==='art'?x.species:x.date.slice(0,7);(g[k]=g[k]||[]).push(x)});
  let keys=Object.keys(g);keys.sort(group==='art'?(a,b)=>g[b].length-g[a].length||a.localeCompare(b,'no'):(a,b)=>a.localeCompare(b));
  $('list').innerHTML=keys.map(k=>{const t=group==='art'?k:(m=>MND[+m[1]-1][0].toUpperCase()+MND[+m[1]-1].slice(1)+' '+m[0])(k.split('-'));
-  return `<h2>${esc(t)} <span class="cnt">${g[k].length}</span></h2><div class="grid">`+g[k].map(x=>`<div class="card" data-id="${x.id}">${x.photo?`<img src="${x.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${esc(x.species)}</b><br><small>${fmt(x.date)}</small></div></div>`).join('')+'</div>'}).join('');
+  return `<h2>${esc(t)} <span class="cnt">${g[k].length}</span></h2><div class="grid">`+g[k].map(x=>`<div class="card" data-id="${x.id}">${x.photo?`<img src="${x.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${esc(x.species)}</b><br><small>${fmt(x.date)}</small>${x.sted?`<div class="pin">📍 ${esc(x.sted)}</div>`:''}</div></div>`).join('')+'</div>'}).join('');
  document.querySelectorAll('.card').forEach(c=>c.onclick=()=>detail(c.dataset.id));
 }
 function detail(id){const x=load().find(e=>e.id===id);if(!x)return;
- $('detail').innerHTML=`${x.photo?`<img src="${x.photo}" alt="">`:''}<h2>${esc(x.species)}</h2><p>Dato: ${fmt(x.date)}</p><p>Jaktområde: ${esc(x.area)||'–'}</p><p>Notater: ${esc(x.notes)||'–'}</p>
+ $('detail').innerHTML=`${x.photo?`<img src="${x.photo}" alt="">`:''}<h2>${esc(x.species)}</h2><p>Dato: <b>${fmt(x.date)}</b></p><p>📍 Sted: <b>${esc(x.sted)||'–'}</b></p><p>Notater: <b>${esc(x.notes)||'–'}</b></p>
  <button class="btn danger" id="del">Slett fangst</button><button class="btn sec" id="close" style="margin-top:8px">Lukk</button>`;
- $('m').classList.add('open');$('close').onclick=()=>$('m').classList.remove('open');
+ $('m').classList.add('open');$('del').style.marginTop='14px';$('close').onclick=()=>$('m').classList.remove('open');
  $('del').onclick=()=>{if(confirm('Slette denne fangsten?')){save(load().filter(e=>e.id!==id));$('m').classList.remove('open');render()}}}
 $('m').onclick=e=>{if(e.target.id==='m')$('m').classList.remove('open')};
 $('photo').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas'),s=Math.min(1,1200/Math.max(i.width,i.height));c.width=Math.round(i.width*s);c.height=Math.round(i.height*s);c.getContext('2d').drawImage(i,0,0,c.width,c.height);photo=c.toDataURL('image/jpeg',.75);$('preview').src=photo;$('preview').style.display='block'};i.src=r.result};r.readAsDataURL(f)};
 function resetForm(){$('f').reset();photo='';$('preview').style.display='none';$('other').classList.add('hide');$('date').value=today()}
 $('f').onsubmit=ev=>{ev.preventDefault();let sp=$('species').value;if(sp==='Annet'){sp=$('other').value.trim();if(!sp){alert('Skriv inn art.');return}}
- const a=load();a.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),species:sp,date:$('date').value,area:$('area').value.trim(),notes:$('notes').value.trim(),photo});
+ const a=load();a.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),species:sp,date:$('date').value,sted:$('sted').value.trim(),notes:$('notes').value.trim(),photo});
  try{save(a)}catch(err){alert('Lagringsplassen i nettleseren er full. Slett noen fangster og prøv igjen.');return}
  resetForm();$('season').value=String(seasonOf(a[a.length-1].date));show('oversikt')};
 resetForm();
+{const y=seasonOf(today());$('hsub').textContent=`Sesong ${y}/${String(y+1).slice(2)} · aug–jul`}
 </script></body></html>

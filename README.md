@@ -2,7 +2,7 @@
 
 En enkel jakt-app (prototype) der du logger bilder av alt du har skutt i løpet av sesongen.
 
-- **Ny fangst:** bilde (med forhåndsvisning, skaleres ned til ~1200 px), art, dato, valgfritt jaktområde og notater.
+- **Ny fangst:** bilde (med forhåndsvisning, skaleres ned til ~1200 px), art, dato, valgfritt sted og notater. Eldre fangster med «jaktområde» vises automatisk som «sted».
 - **Oversikt:** galleri per sesong (1. august–31. juli), gruppert per art eller per måned med antall. Trykk på et kort for detaljer og sletting.
 
 **Kjøre:** åpne `index.html` i en nettleser (ingen byggesteg), eller se live på https://haraldsandvik98-cpu.github.io/jaktapp/. Fangster lagres kun lokalt i nettleseren (localStorage), ikke på en server.
@@ -10,3 +10,7 @@ En enkel jakt-app (prototype) der du logger bilder av alt du har skutt i løpet 
 Skjermbildene i `docs/screenshots/` bruker genererte eksempelfangster (illustrasjoner, ikke ekte bilder) som kun legges inn av skjermbilde-skriptet.
 
 Flere krav kommer – appen bygges videre etter hvert.
+
+## Bildekreditering
+
+Bakgrunn (`assets/bg.jpg`): «River in the heart of Trollheimen mountains» av Jakub Fryš, [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:River_in_the_heart_of_Trollheimen_mountains.jpg), lisens [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Nedskalert og komprimert.
