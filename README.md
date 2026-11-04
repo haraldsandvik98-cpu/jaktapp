@@ -2,15 +2,64 @@
 
 En enkel jakt-app (prototype) der du logger bilder av alt du har skutt i løpet av sesongen.
 
-- **Arter:** oversikt over Storvilt og Småvilt (arter med jakttid i [FOR-2022-01-21-128](https://lovdata.no/dokument/SF/forskrift/2022-01-21-128)), med antall fangster per art. Trykk på en art for å se fangstene og legge til ny: sted (valgfritt), dato og tid, flere bilder, notater.
-- **År:** velg år, se totalt antall og fangstene per art eller per måned. Trykk på en fangst for bildegalleri (sveip) og sletting.
+- **Arter:** oversikt over Storvilt og Småvilt (arter med jakttid i [FOR-2022-01-21-128](https://lovdata.no/dokument/SF/forskrift/2022-01-21-128)), med antall fangster per art. Trykk på en art for å se fangstene og legge til ny: sted (valgfritt), posisjon på topografisk kart (trykk eller «Bruk min posisjon»), dato og tid, flere bilder, notater. Hver art har et ekte viltbilde (se Bildekreditter).
+- **År:** velg år, se totalt antall og fangstene per art, per måned eller på kart. Trykk på en fangst for bildegalleri (sveip) og sletting.
 
-**Kjøre:** åpne `index.html` i en nettleser (ingen byggesteg), eller se live på https://haraldsandvik98-cpu.github.io/jaktapp/. Appen er privat: fangster og bilder lagres kun på enheten (IndexedDB i nettleseren), ikke på en server.
+**Kjøre:** åpne `index.html` i en nettleser (ingen byggesteg), eller se live på https://haraldsandvik98-cpu.github.io/jaktapp/. Appen er privat: som standard lagres fangster og bilder kun på enheten (IndexedDB i nettleseren). Valgfritt kan du koble til ditt eget Supabase-prosjekt (se under).
 
 Skjermbildene i `docs/screenshots/` bruker genererte eksempelfangster (illustrasjoner, ikke ekte bilder) som kun legges inn av skjermbilde-skriptet.
 
 Flere krav kommer – appen bygges videre etter hvert.
 
-## Bildekreditering
+## Lagring på server (valgfritt, Supabase)
+
+Uten oppsett lagres alt kun på enheten. Vil du ha fangstene privat på en server (og på flere enheter), kan du koble til ditt eget gratis Supabase-prosjekt:
+
+1. Gå til [supabase.com](https://supabase.com), lag en gratis konto og trykk **New project**. Velg navn, passord til databasen og region (f.eks. Stockholm/Frankfurt).
+2. Åpne **SQL Editor** i prosjektet, lim inn hele innholdet i [`supabase/schema.sql`](supabase/schema.sql) og trykk **Run**. Dette lager tabellen `entries` med radnivåsikkerhet (RLS) og en privat bildebøtte `photos` der hver bruker kun når sine egne filer.
+3. Gå til **Authentication → URL Configuration**: sett **Site URL** til `https://haraldsandvik98-cpu.github.io/jaktapp/` og legg samme adresse til under **Redirect URLs**. E-post-innlogging (magic link) er på som standard under **Authentication → Providers → Email**.
+4. Gå til **Project Settings → API** (eller **API Keys**) og kopier **Project URL** og **anon / publishable key**. Bruk aldri `service_role`/secret-nøkkelen i appen. Appen avviser den.
+5. Åpne appen → **Innstillinger**, lim inn URL og nøkkel og trykk **Lagre**. Logg inn med e-post og trykk på lenken du får.
+6. Har du fangster lagret lokalt fra før, trykk **Flytt lokale fangster til server** under Innstillinger.
+
+Anon-nøkkelen er offentlig etter design. Det er RLS-reglene i `schema.sql` som sørger for at bare du ser dine fangster og bilder.
+
+## Bildekreditter
 
 Bakgrunn (`assets/bg.jpg`): «River in the heart of Trollheimen mountains» av Jakub Fryš, [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:River_in_the_heart_of_Trollheimen_mountains.jpg), lisens [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Nedskalert og komprimert.
+
+### Artsbilder (`assets/species/`)
+
+Alle fra Wikimedia Commons, beskåret til kvadrat og komprimert (endret).
+
+| Art | Fil | Fotograf | Lisens |
+|---|---|---|---|
+| Elg | [European Elk (Europeisk Elg) (Alces alces alces) - Bodø, Norway 2023-07-16.jpg](https://commons.wikimedia.org/wiki/File:European_Elk_(Europeisk_Elg)_(Alces_alces_alces)_-_Bod%C3%B8,_Norway_2023-07-16.jpg) | Ryan Hodnett | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Hjort | [Red Deer Cervus Elaphus Richmond Park 2025 01.jpg](https://commons.wikimedia.org/wiki/File:Red_Deer_Cervus_Elaphus_Richmond_Park_2025_01.jpg) | Julian Herzog (Website) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) |
+| Rådyr | [Roe deer (Capreolus capreolus) female Cumnor.jpg](https://commons.wikimedia.org/wiki/File:Roe_deer_(Capreolus_capreolus)_female_Cumnor.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Rådyrbukk | [Capreolus capreolus Wien Zentralfriedhof 20221021 06.jpg](https://commons.wikimedia.org/wiki/File:Capreolus_capreolus_Wien_Zentralfriedhof_20221021_06.jpg) | Uoaei1 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Villsvin | [Wild boar (Sus scrofa vittatus) juvenile.jpg](https://commons.wikimedia.org/wiki/File:Wild_boar_(Sus_scrofa_vittatus)_juvenile.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Villrein | [Rangifer tarandus fennicus 245142390.jpg](https://commons.wikimedia.org/wiki/File:Rangifer_tarandus_fennicus_245142390.jpg) | Pentti Impiö | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) |
+| Rype | [Rock ptarmigan (Lagopus muta islandorum) female breeding Botnsvatn.jpg](https://commons.wikimedia.org/wiki/File:Rock_ptarmigan_(Lagopus_muta_islandorum)_female_breeding_Botnsvatn.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Hare | [Mountain hare (Lepus timidus) Oppdal.jpg](https://commons.wikimedia.org/wiki/File:Mountain_hare_(Lepus_timidus)_Oppdal.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Storfugl | [Tetrao urogallus Richard Bartz.jpg](https://commons.wikimedia.org/wiki/File:Tetrao_urogallus_Richard_Bartz.jpg) | Richard Bartz, Munich aka Makro Freak | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) |
+| Orrfugl | [Orrtuppen.jpg](https://commons.wikimedia.org/wiki/File:Orrtuppen.jpg) | Spjutkastare | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Jerpe | [Hazel Grouse.jpg](https://commons.wikimedia.org/wiki/File:Hazel_Grouse.jpg) | Chinmay Rahane | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Rev | [Vulpes vulpes Mallnitz 01.jpg](https://commons.wikimedia.org/wiki/File:Vulpes_vulpes_Mallnitz_01.jpg) | Uoaei1 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Grevling | [European badger (Meles meles taxus) Drenthe 2.jpg](https://commons.wikimedia.org/wiki/File:European_badger_(Meles_meles_taxus)_Drenthe_2.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Mår | [European pine marten (Martes martes) Drenthe 2.jpg](https://commons.wikimedia.org/wiki/File:European_pine_marten_(Martes_martes)_Drenthe_2.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Mink | [Mink (Neovison vison).jpg](https://commons.wikimedia.org/wiki/File:Mink_(Neovison_vison).jpg) | Marton Berntsen | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) |
+| Røyskatt | [035 Stoat in winter coat in Parc naturel régional Jura vaudois Photo by Giles Laurent.jpg](https://commons.wikimedia.org/wiki/File:035_Stoat_in_winter_coat_in_Parc_naturel_r%C3%A9gional_Jura_vaudois_Photo_by_Giles_Laurent.jpg) | Giles Laurent | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Bever | [Річковий бобер (Castor fiber).jpg](https://commons.wikimedia.org/wiki/File:%D0%A0%D1%96%D1%87%D0%BA%D0%BE%D0%B2%D0%B8%D0%B9_%D0%B1%D0%BE%D0%B1%D0%B5%D1%80_(Castor_fiber).jpg) | Ryzhkov Sergey | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Ekorn | [Red squirrel (21808).jpg](https://commons.wikimedia.org/wiki/File:Red_squirrel_(21808).jpg) | Rhododendrites | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Ender | [Anas platyrhynchos male female.jpg](https://commons.wikimedia.org/wiki/File:Anas_platyrhynchos_male_female.jpg) | This picture was realized by Richard Bartz by using a Canon EF 70-300mm f/4-5.6 IS USM Lens | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) |
+| Gjess | [Graugans Anser Anser.jpg](https://commons.wikimedia.org/wiki/File:Graugans_Anser_Anser.jpg) | H005, denoised by Pro2 | Public domain |
+| Ærfugl | [Portrait einer männlichen Eiderente (Somateria mollissima) auf Norderney.jpg](https://commons.wikimedia.org/wiki/File:Portrait_einer_m%C3%A4nnlichen_Eiderente_(Somateria_mollissima)_auf_Norderney.jpg) | Stephan Sprinz | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) |
+| Skarv | [Phalacrocorax carbo, Hérault River cf01.jpg](https://commons.wikimedia.org/wiki/File:Phalacrocorax_carbo,_H%C3%A9rault_River_cf01.jpg) | Christian Ferrer | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Ringdue | [Common Wood Pigeon facing left.jpg](https://commons.wikimedia.org/wiki/File:Common_Wood_Pigeon_facing_left.jpg) | Alexis LOURS | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) |
+| Rugde | [Waldschnepfe (scolopax rusticola) - Spiekeroog, Nationalpark Niedersächsisches Wattenmeer.jpg](https://commons.wikimedia.org/wiki/File:Waldschnepfe_(scolopax_rusticola)_-_Spiekeroog,_Nationalpark_Nieders%C3%A4chsisches_Wattenmeer.jpg) | Stephan Sprinz | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Enkeltbekkasin | [Common snipe (Gallinago gallinago faeroeensis) Botnsvatn.jpg](https://commons.wikimedia.org/wiki/File:Common_snipe_(Gallinago_gallinago_faeroeensis)_Botnsvatn.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Kråkefugler | [Hooded crow (Corvus cornix) at Gulf of Trieste.jpg](https://commons.wikimedia.org/wiki/File:Hooded_crow_(Corvus_cornix)_at_Gulf_of_Trieste.jpg) | Petar Milošević | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Måker | [Head of European herring gull (Larus argentatus). Saint-Malo, France.jpg](https://commons.wikimedia.org/wiki/File:Head_of_European_herring_gull_(Larus_argentatus)._Saint-Malo,_France.jpg) | Ввласенко | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) |
+| Gråtrost | [Turdus pilaris on Crataegus in winter.jpg](https://commons.wikimedia.org/wiki/File:Turdus_pilaris_on_Crataegus_in_winter.jpg) | Anaxibia (Andrey Polstianoi) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Fasan | [Common pheasant (Phasianus colchicus) male 3.jpg](https://commons.wikimedia.org/wiki/File:Common_pheasant_(Phasianus_colchicus)_male_3.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
