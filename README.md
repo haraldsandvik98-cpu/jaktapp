@@ -1,16 +1,12 @@
-# jakt-app (prototype)
+# Jaktlogg
 
-Klikkbar prototype av en norsk jakt-app, mobilformat, én fil (`index.html`, Leaflet via CDN).
+En enkel jakt-app (prototype) der du logger bilder av alt du har skutt i løpet av sesongen.
 
-## Kjør
-Åpne `index.html` i nettleseren, eller: `python3 -m http.server` og gå til http://localhost:8000.
+- **Ny fangst:** bilde (med forhåndsvisning, skaleres ned til ~1200 px), art, dato, valgfritt jaktområde og notater.
+- **Oversikt:** galleri per sesong (1. august–31. juli), gruppert per art eller per måned med antall. Trykk på et kort for detaljer og sletting.
 
-## Klikksti
-1. **Kart** – kart over Norge med 5 eksempelområder (Trollheimen, Romsdal, Hardangervidda, Finnskogen, Saltfjellet). Trykk et område → kort med vilt og jakttider.
-2. **Jakttider** – Gantt-kalender aug–mars for elg, hjort, rådyr, rype, hare, med linje for i dag, notater om kommunale jakttider og jaktforbud 24.–31. desember. Elgdatoen er merket ubekreftet.
-3. **Varsler** – av/på per art, varsel 1/3/7/14 dager før, test-knapp viser «Elgjakta starter om 3 dager i Molde».
+**Kjøre:** åpne `index.html` i en nettleser (ingen byggesteg), eller se live på https://haraldsandvik98-cpu.github.io/jaktapp/. Fangster lagres kun lokalt i nettleseren (localStorage), ikke på en server.
 
-## Data
-Illustrativt. Områdene er eksempeldata. Jakttider fra Miljødirektoratets forskrift om jakt- og fangsttider 2022–2028 (FOR-2022-01-21-128). **Elg 25.09.–23.12. er ikke bekreftet i selve forskriften – sjekk på Lovdata før den vises som offisiell.** Varsler er simulert (ingen ekte push).
+Skjermbildene i `docs/screenshots/` bruker genererte eksempelfangster (illustrasjoner, ikke ekte bilder) som kun legges inn av skjermbilde-skriptet.
 
-Skjermbilder: `docs/screenshots/` · Video: `docs/demo.mp4`
+Flere krav kommer – appen bygges videre etter hvert.

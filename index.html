@@ -1,121 +1,84 @@
-<!doctype html><html lang="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>jakt-app</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!DOCTYPE html>
+<html lang="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jaktlogg</title>
 <style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#d9ded6;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1f2a1f}
-.phone{width:390px;height:844px;background:#f6f5ef;border-radius:44px;box-shadow:0 20px 60px #0004;overflow:hidden;position:relative;display:flex;flex-direction:column;border:10px solid #111}
-header{background:#2f4f2f;color:#fff;padding:44px 20px 14px}header h1{margin:0;font-size:22px}header p{margin:2px 0 0;font-size:13px;opacity:.8}
-main{flex:1;position:relative;overflow:hidden}.screen{position:absolute;inset:0;display:none;overflow:auto}.screen.on{display:block}
-#map{position:absolute;inset:0}
-.tag{position:absolute;top:10px;left:10px;z-index:500;background:#fff;font-size:11px;padding:4px 8px;border-radius:8px;box-shadow:0 1px 4px #0003}
-.card{position:absolute;left:12px;right:12px;bottom:12px;z-index:600;background:#fff;border-radius:18px;padding:16px;box-shadow:0 6px 20px #0003;display:none}
-.card.on{display:block}.card h2{margin:0 0 4px;font-size:19px}.card .reg{font-size:12px;color:#666}.card .x{position:absolute;right:12px;top:10px;border:0;background:none;font-size:20px;cursor:pointer}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.chip{background:#e6eee0;color:#2f4f2f;padding:4px 10px;border-radius:12px;font-size:13px}
-.card table{width:100%;font-size:13px;border-collapse:collapse}.card td{padding:3px 0}.card td:last-child{text-align:right;color:#444}
-.note{font-size:11px;color:#777;margin-top:8px}
-nav{display:flex;background:#fff;border-top:1px solid #ddd;padding-bottom:18px}nav button{flex:1;border:0;background:none;padding:10px 0 4px;font-size:12px;color:#888;cursor:pointer}nav button span{display:block;font-size:22px}nav button.on{color:#2f4f2f;font-weight:600}
-.pad{padding:16px}.sec h3{margin:6px 0 10px;font-size:16px}
-.gantt{background:#fff;border-radius:16px;padding:12px;box-shadow:0 1px 4px #0001}
-.months,.row .track{display:grid;grid-template-columns:repeat(8,1fr)}.months{margin-left:86px;font-size:10px;color:#888}.months div{text-align:center}
-.row{display:flex;align-items:center;margin:8px 0}.row .lbl{width:86px;font-size:13px;font-weight:600}.row .track{flex:1;position:relative;height:22px;background:repeating-linear-gradient(90deg,#f1f1ec 0 calc(12.5% - 1px),#ddd calc(12.5% - 1px) 12.5%);border-radius:6px}
-.bar{position:absolute;top:3px;height:16px;border-radius:8px;font-size:9px;color:#fff;display:flex;align-items:center;padding-left:5px;white-space:nowrap}
-.today{position:absolute;top:-4px;bottom:-4px;width:2px;background:#c0392b}
-.list{margin-top:14px;background:#fff;border-radius:16px;padding:6px 12px}.list div{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:13px}.list div:last-child{border:0}
-.warn{background:#fff6dd;border:1px solid #f0d78c;border-radius:12px;padding:10px;font-size:12px;margin-top:14px}
-.banner{position:absolute;top:8px;left:10px;right:10px;z-index:1000;background:#ffffffee;backdrop-filter:blur(8px);border-radius:18px;padding:12px 14px;box-shadow:0 8px 24px #0004;display:flex;gap:10px;transform:translateY(-140%);transition:transform .45s}
-.banner.on{transform:none}.banner .ic{width:36px;height:36px;border-radius:9px;background:#2f4f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}.banner b{font-size:13px}.banner p{margin:2px 0 0;font-size:13px}.banner small{color:#888;font-size:11px}
-.set{background:#fff;border-radius:16px;padding:4px 14px;margin-bottom:14px}.set label{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #eee;font-size:14px}.set label:last-child{border:0}
-.sw{appearance:none;width:46px;height:28px;background:#ccc;border-radius:14px;position:relative;cursor:pointer;transition:.2s}.sw:checked{background:#3f7a3f}.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}.sw:checked::after{left:21px}
-.seg{display:flex;gap:6px}.seg button{flex:1;border:1px solid #3f7a3f;background:#fff;color:#3f7a3f;border-radius:10px;padding:8px;cursor:pointer}.seg button.on{background:#3f7a3f;color:#fff}
-.up{background:#2f4f2f;color:#fff;border-radius:16px;padding:14px;margin-bottom:14px}.up small{opacity:.8}
-.btn{width:100%;border:0;background:#c8781e;color:#fff;font-size:15px;padding:12px;border-radius:12px;cursor:pointer;margin-top:4px}
-#map .leaflet-control-zoom{margin-top:12px;margin-right:12px;border:0;box-shadow:0 2px 8px rgba(0,0,0,.35)}#map .leaflet-control-zoom a{width:40px;height:40px;line-height:40px;font-size:22px}.months{margin-left:0;display:grid;grid-template-columns:repeat(10,1fr);font-size:10px;color:#888;position:sticky;top:0;background:#f6f5ef;padding:4px 0;z-index:2}.months div{text-align:center}.cat{background:#fff;border-radius:14px;margin:8px 0;box-shadow:0 1px 4px #0001}.cat summary{padding:12px;font-weight:600;font-size:14px;cursor:pointer}.cat summary small{color:#888;font-weight:400}.sp{padding:6px 12px 8px;border-top:1px solid #eee}.spn{font-size:13px;font-weight:600;margin-bottom:2px}.var{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#555;margin-top:4px}.var b{white-space:nowrap;color:#222}.var b.fr{color:#c0392b}.sp .track{position:relative;height:10px;margin:2px 0 4px;border-radius:5px;background:repeating-linear-gradient(90deg,#f1f1ec 0 calc(10% - 1px),#ddd calc(10% - 1px) 10%)}.sp .bar{top:1px;height:8px;background:#4f8a3f;padding:0}.sp .today{top:-2px;bottom:-2px}#swl .cat .set{margin:0;box-shadow:none}</style></head><body>
-<div class="phone">
-<header><h1 id="ttl">Kart</h1><p id="sub">Jaktområder i Norge</p></header>
-<main>
-<section class="screen on" id="s-kart"><div id="map"></div><div class="tag">⚠️ Illustrative eksempeldata</div>
-<div class="card" id="card"><button class="x" onclick="card.classList.remove('on')">×</button><h2 id="cn"></h2><div class="reg" id="cr"></div><div class="chips" id="cc"></div><table id="ct"></table><div class="note">Eksempeldata – sjekk lokale jakttider hos kommunen/grunneier.</div></div></section>
-<section class="screen" id="s-tider"><div class="pad"><h2 style="margin:0 0 4px;font-size:17px;color:#2f4f2f">🇳🇴 Gjelder hele Norge</h2><div style="font-size:12px;color:#666;margin-bottom:8px">Alle arter med jakttid i jakttidsforskriften. Trykk en gruppe for å åpne.</div><div class="months"><div>Jul</div><div>Aug</div><div>Sep</div><div>Okt</div><div>Nov</div><div>Des</div><div>Jan</div><div>Feb</div><div>Mar</div><div>Apr</div></div><div id="rows"></div>
-<div class="warn" id="ikke"><b>Ikke i jakttidsforskriften</b> (ingen ordinær jakttid):<br>• Bjørn, ulv og jerv – kun lisens-/skadefelling etter rovviltforskriften (FOR-2005-03-18-242), ikke ordinær jakt.<br>• Havørn – ikke oppført, fredet.<br>• Oter – ikke oppført, fredet.<br>• «Kanadisk gjedde» – fisk, ikke vilt; ikke omfattet.<br>Gaupe har jakttid, men bare der kvote/kvotefri jakt er fastsatt. Mink og rev står som villmink og rødrev.</div>
-<div class="warn" style="border-left:4px solid #c0392b"><b>⚠️ Elg 25.09.–23.12. er ubekreftet</b> – ikke funnet i selve forskriften. Må sjekkes på Lovdata før den vises som offisiell.</div><div class="warn"><b>Merk:</b> Generelle jakttider for hele Norge etter Miljødirektoratets forskrift om jakt- og fangsttider (FOR-2022-01-21-128, 1.4.2022–31.3.2028).<br>* Elg, hjort og rådyr (og bever): kun i kommuner der lokal forskrift åpner for jakt. Kommunen fastsetter lokale forskrifter og jakttiden kan være kortere – sjekk din kommune.<br>¹ For rype og hare: Troms og Finnmark fylker, Narvik og Evenes kommuner, og delen av Hamarøy nord for Tysfjorden/Hellemofjorden.<br><b>Ingen jakt 24.–31. desember.</b></div></div></section>
-<section class="screen" id="s-varsler"><div class="banner" id="banner"><div class="ic">🦌</div><div><b>jakt-app</b> <small>· nå</small><p>Elgjakta starter om 3 dager i Molde</p><small>25. september · Trykk for å se jakttider</small></div></div>
-<div class="pad"><div class="up"><small>Neste sesongstart</small><div style="font-size:18px;font-weight:600;margin-top:2px">Elg · Molde · 25. september</div><small>Varsel sendes 3 dager før</small></div>
-<div class="sec"><h3>Varsle meg for</h3><div>
-<div id="swl"></div></div>
-<h3>Dager før start</h3><div class="seg set" style="padding:10px" id="seg"><button>1</button><button class="on">3</button><button>7</button><button>14</button></div>
-<button class="btn" id="test">Vis testvarsel</button></div></div></section>
-</main>
-<nav><button class="on" data-s="kart"><span>🗺️</span>Kart</button><button data-s="tider"><span>📅</span>Jakttider</button><button data-s="varsler"><span>🔔</span>Varsler</button></nav>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#eef1ec;color:#1f2a1f}
+.app{max-width:390px;margin:0 auto;min-height:100vh;background:#fff;padding:16px 16px 80px;position:relative}
+h1{margin:0 0 4px;color:#2f5d34;font-size:26px}h2{font-size:16px;margin:18px 0 8px;display:flex;justify-content:space-between}
+.btn{display:block;width:100%;padding:12px;border:0;border-radius:10px;background:#2f5d34;color:#fff;font-size:16px;cursor:pointer}
+.danger{background:#a33}.sec{background:#888}
+label{display:block;font-size:14px;font-weight:600;margin-top:12px}
+input,select,textarea{width:100%;padding:10px;font-size:16px;border:1px solid #bbb;border-radius:8px;margin-top:4px;font-family:inherit}
+#preview{width:100%;max-height:220px;object-fit:cover;border-radius:8px;display:none;margin-top:8px}
+.empty{text-align:center;color:#667;padding:40px 10px;border:2px dashed #ccd;border-radius:12px;margin:16px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{border-radius:10px;overflow:hidden;background:#f4f6f2;cursor:pointer}
+.card img,.ph{width:100%;height:110px;object-fit:cover;display:block;background:#cfd8c8}.card div{padding:6px 8px;font-size:14px}.card small{color:#667}
+.cnt{background:#2f5d34;color:#fff;border-radius:10px;padding:1px 8px;font-size:13px}
+.seg{display:flex;background:#e4e9e0;border-radius:10px;padding:3px;margin-top:10px}.seg button{flex:1;border:0;background:none;padding:8px;border-radius:8px;font-size:14px}.seg .on{background:#fff;font-weight:600}
+.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:390px;display:flex;background:#fff;border-top:1px solid #ddd}
+.tabs button{flex:1;border:0;background:none;padding:12px;font-size:15px;color:#667}.tabs .on{color:#2f5d34;font-weight:700}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center}.modal.open{display:flex}
+.sheet{background:#fff;width:100%;max-width:390px;border-radius:16px 16px 0 0;padding:16px;max-height:90vh;overflow:auto}.sheet img{width:100%;border-radius:8px}
+.hide{display:none}.muted{color:#667;font-size:14px}
+</style></head><body><div class="app">
+<h1>Jaktlogg</h1>
+<section id="s-ny">
+<div class="muted">Ny fangst</div>
+<form id="f">
+<label>Bilde<input type="file" id="photo" accept="image/*"></label><img id="preview" alt="Forhåndsvisning">
+<label>Art<select id="species"></select></label>
+<input id="other" class="hide" placeholder="Skriv art">
+<label>Dato<input type="date" id="date" required></label>
+<label>Jaktområde (valgfritt)<input id="area" placeholder="f.eks. Trollheimen"></label>
+<label>Notater (valgfritt)<textarea id="notes" rows="3"></textarea></label>
+<button class="btn" style="margin-top:16px">Lagre</button>
+</form></section>
+<section id="s-oversikt" class="hide">
+<label>Sesong<select id="season"></select></label>
+<div class="seg"><button id="g-art" class="on">Per art</button><button id="g-mnd">Per måned</button></div>
+<div id="list"></div></section>
+<nav class="tabs"><button id="t-ny" class="on">+ Ny fangst</button><button id="t-oversikt">Oversikt</button></nav>
 </div>
+<div class="modal" id="m"><div class="sheet" id="detail"></div></div>
 <script>
-// Data: FOR-2022-01-21-128 § 2 (lest på lovdata.no 04.11.2026). [nøkkel, navn, emoji, [[område, fra, til, merknad?]]]
-const HL='Hele landet',FF='Den frie jakten på hav og fjord, svenskegrensen–Agder',TF='Troms og Finnmark¹';
-const CAT=[
-["Hjortevilt","🫎",[
- ["elg","Elg (ubekreftet)","🫎",[[HL+'*','25.09','23.12'],['Kommuner i Finnmark*','01.09','23.12']]],
- ["hjort","Hjort","🦌",[[HL+'*','01.09','23.12']]],
- ["radyr","Rådyr","🦌",[[HL+'*','25.09','23.12'],['Voksen rådyrbukk*','10.08','23.12']]],
- ["villrein","Villrein","🦌",[['Alle villreinområder','20.08','30.09']]],
- ["dahjort","Dåhjort og muflon","🐐",[[HL,'25.09','23.12']]]]],
-["Småvilt – pattedyr","🐇",[
- ["hare","Hare","🐇",[[HL,'10.09','28/29.02'],[TF,'10.09','15.03']]],
- ["sorhare","Sørhare og viltlevende kanin","🐇",[[HL,'10.09','28/29.02']]],
- ["ekorn","Ekorn","🐿️",[[HL,'01.11','15.03']]],
- ["bever","Bever","🦫",[['Kommuner der lokal forskrift åpner','01.10','30.04']]]]],
-["Rovdyr og mårdyr","🦊",[
- ["rodrev","Rødrev","🦊",[[HL,'15.07','15.04']]],
- ["royskatt","Røyskatt","🦡",[[HL,'21.08','15.03']]],
- ["mar","Mår","🦡",[[HL,'01.11','15.03']]],
- ["grevling","Grevling","🦡",[[HL,'21.08','31.01']]],
- ["gaupe","Gaupe","🐈",[['Kun der kvote/kvotefri jakt er fastsatt (rovviltforskriften)','01.02','31.03']]]]],
-["Skogsfugl og rype","🐦",[
- ["skogsfugl","Jerpe, orrfugl og storfugl","🐓",[[HL,'10.09','23.12']]],
- ["rype","Lirype og fjellrype","🐦",[[HL,'10.09','28/29.02'],[TF,'10.09','15.03']]]]],
-["Ender og gjess","🦆",[
- ["kortnebbgas","Kortnebbgås","🪿",[[HL,'10.08','23.12'],['Troms og Nordland nord for Rana/Rødøy','21.08','23.12'],[FF,'10.09','23.12'],['Finnmark','fredet','']]],
- ["gragas","Grågås","🪿",[[HL,'10.08','23.12'],['Troms og Nordland nord for Rana/Rødøy','15.08','23.12'],['Finnmark: kun ytre fjordstrøk og kyst (avgrenset)','21.08','23.12'],[FF,'10.09','23.12']]],
- ["andeender","Brunnakke, krikkand og stokkand","🦆",[[HL,'21.08','23.12'],[FF,'10.09','23.12']]],
- ["dykkender","Toppand, kvinand, siland og laksand","🦆",[[HL,'10.09','23.12']]],
- ["svartand","Svartand","🦆",[['Kun Østfold','10.09','23.12']]],
- ["aerfugl","Ærfugl (kun hannfugl)","🦆",[['Vestfold, Telemark, Østfold, Buskerud og tidl. Aust-Agder – maks 5/døgn, 25/år','01.10','30.11']]]]],
-["Skarv","🐦‍⬛",[
- ["toppskarv","Toppskarv","🐦‍⬛",[['Finnmark, Troms, Nordland og Trøndelag nord for Trondheimsfjorden','01.10','30.11']]],
- ["storskarv","Storskarv","🐦‍⬛",[['Ungfugl m/hvit buk, saltvann: Østfold–Agder','10.09','09.11'],['Ungfugl m/hvit buk, saltvann: Rogaland–Finnmark','01.10','30.11'],['Alle, ferskvann: Østfold–Vestland (inkl. Innlandet)','10.08','23.12']]]]],
-["Vadere og duer","🕊️",[
- ["bekkasin","Enkeltbekkasin","🐦",[[HL,'21.08','31.10']]],
- ["rugde","Rugde","🐦",[[HL,'10.09','23.12']]],
- ["ringdue","Ringdue","🕊️",[['Hele landet unntatt Troms og Finnmark (fredet)','21.08','23.12']]]]],
-["Kråkefugler og trost","🐦‍⬛",[
- ["grastrost","Gråtrost","🐦",[[HL,'10.08','23.12']]],
- ["notteskrike","Nøtteskrike","🐦",[['Hele landet unntatt Finnmark, Troms og Nordland (fredet)','10.08','28/29.02']]],
- ["skjaere","Skjære","🐦‍⬛",[[HL,'10.08','28/29.02']]],
- ["krake","Kråke","🐦‍⬛",[[HL,'15.07','31.03']]],
- ["ravn","Ravn","🐦‍⬛",[[HL,'10.08','28/29.02'],['Troms og Finnmark','10.08','15.03']]]]],
-["Fremmede/introduserte arter","⚠️",[
- ["kanadagas","Kanadagås og stripegås","🪿",[[HL,'10.08','23.12'],[FF,'10.09','23.12']]],
- ["fremmedender","Knoppand, mandarinand og stivhaleand","🦆",[[HL,'21.08','23.12']]],
- ["fasan","Fasan","🐓",[[HL,'01.10','23.12']]],
- ["helar","Bisam, mårhund, vaskebjørn og villmink","🦝",[[HL,'01.04','31.03','hele året']]],
- ["villsvin","Villsvin","🐗",[[HL,'01.04','31.03','hele året – sugge med diende unger fredet']]]]]];
-const SP={};CAT.forEach(c=>c[2].forEach(s=>SP[s[0]]=s));
-const DEF=['elg','hjort','radyr','rype','hare'];
-const S={};Object.values(SP).forEach(s=>S[s[0]]=[s[0]=='elg'?'Elg (ubekreftet – sjekk Lovdata)':s[1],s[3][0][1],s[3][0][2]]);
-
-const A=[["Trollheimen","Møre og Romsdal / Trøndelag",62.85,9.2,["elg","hjort","skogsfugl","rype","hare","rodrev"]],["Romsdal","Møre og Romsdal (nær Molde)",62.55,7.6,["hjort","elg","radyr","rype","gragas","andeender"]],["Hardangervidda","Vestland / Buskerud",60.1,7.5,["villrein","rype","hare","rodrev"]],["Finnskogen","Innlandet",60.6,12.4,["elg","radyr","skogsfugl","bever","grevling","gaupe"]],["Saltfjellet","Nordland",66.7,15.4,["elg","rype","hare","rodrev","mar","ravn"]]];
-const NO=L.latLngBounds([57.9,4.5],[71.2,31.2]);const map=L.map('map',{zoomControl:false,zoomSnap:0.25,maxBounds:NO.pad(0.3),maxBoundsViscosity:1,minZoom:3,maxZoom:14,scrollWheelZoom:true,touchZoom:true});map.fitBounds(NO,{padding:[8,8]});map.setMinZoom(Math.max(3,map.getZoom()-0.5));L.control.zoom({position:'topright',zoomInTitle:'Zoom inn',zoomOutTitle:'Zoom ut'}).addTo(map);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
-A.forEach(a=>{L.circle([a[2],a[3]],{radius:45000,color:'#2f4f2f',fillColor:'#4f8a3f',fillOpacity:.35}).addTo(map).on('click',()=>show(a));L.marker([a[2],a[3]]).addTo(map).bindTooltip(a[0]).on('click',()=>show(a))});
-function show(a){cn.textContent=a[0];cr.textContent=a[1];cc.innerHTML=a[4].map(k=>`<span class="chip">${S[k][0]}</span>`).join('');ct.innerHTML=a[4].map(k=>`<tr><td>${S[k][0]}</td><td>${S[k][1]} – ${S[k][2]}</td></tr>`).join('');card.classList.add('on')}
-window.showArea=n=>show(A.find(a=>a[0]==n));
-// gantt: Jul 1 .. Apr 30 = 304 days
-const st=new Date(2026,6,1),D=d=>Math.max(0,Math.min(100,(d-st)/864e5/304*100));
-const pd=(x,end)=>{if(x=='28/29.02')return new Date(2027,1,28);const[d,m]=x.split('.').map(Number);let y=m>=7?2026:2027;if(end&&m==3&&d==31&&x==='31.03')y=2027;return new Date(y,m-1,d)};
-const now=D(new Date());
-rows.innerHTML=CAT.map((c,i)=>`<details class="cat"${i==0?' open':''}><summary>${c[1]} ${c[0]} <small>(${c[2].length})</small></summary>`+c[2].map(s=>`<div class="sp"><div class="spn">${s[2]} ${s[1]}</div>`+s[3].map(v=>{if(v[1]=='fredet')return `<div class="var"><span>${v[0]}</span><b class="fr">fredet</b></div>`;let a=pd(v[1]),b=pd(v[2],1);let full=v[3]&&v[3].startsWith('hele året');if(full){a=st;b=new Date(2027,3,30)}const txt=`${v[1]}.–${v[2]}.`;return `<div class="var"><span>${v[0]}${v[3]?' · '+v[3]:''}</span><b>${full?'Hele året':txt}</b></div><div class="track"><div class="bar" style="left:${D(a)}%;width:${D(b)-D(a)}%"></div><div class="today" style="left:${now}%"></div></div>`}).join('')+`</div>`).join('')+`</details>`).join('');
-swl.innerHTML=CAT.map(c=>`<details class="cat"${c[0]=='Hjortevilt'||c[0]=='Småvilt – pattedyr'||c[0]=='Skogsfugl og rype'?' open':''}><summary>${c[1]} ${c[0]}</summary><div class="set">`+c[2].map(s=>`<label>${s[2]} ${s[1]}<input type="checkbox" class="sw"${DEF.includes(s[0])?' checked':''}></label>`).join('')+`</div></details>`).join('');
-const T={kart:["Kart","Jaktområder i Norge"],tider:["Jakttider","Generelle jakttider 2026/27"],varsler:["Varsler","Sesongvarsler"]};
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x==b));document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id=='s-'+b.dataset.s));ttl.textContent=T[b.dataset.s][0];sub.textContent=T[b.dataset.s][1];if(b.dataset.s=='kart')setTimeout(()=>{map.invalidateSize()},50)});
-seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x==b));banner.querySelector('p').textContent=`Elgjakta starter om ${b.textContent} dager i Molde`});
-test.onclick=()=>{banner.classList.remove('on');setTimeout(()=>banner.classList.add('on'),100)};
+const K='jaktlogg.entries',$=id=>document.getElementById(id),esc=s=>String(s||'').replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+const ARTER=['Elg','Hjort','Rådyr','Villrein','Rype','Hare','Storfugl','Orrfugl','Jerpe','Rev','Gaupe','Ender','Gjess','Annet'];
+const MND=['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+let photo='',group='art';
+const load=()=>JSON.parse(localStorage.getItem(K)||'[]'),save=a=>localStorage.setItem(K,JSON.stringify(a));
+const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+// Sesong: 1. august – 31. juli
+const seasonOf=d=>{const[y,m]=d.split('-').map(Number);return m>=8?y:y-1};
+const fmt=d=>d.split('-').reverse().join('.');
+$('species').innerHTML=ARTER.map(a=>`<option>${a}</option>`).join('');
+$('species').onchange=()=>$('other').classList.toggle('hide',$('species').value!=='Annet');
+function show(t){['ny','oversikt'].forEach(x=>{$('s-'+x).classList.toggle('hide',x!==t);$('t-'+x).classList.toggle('on',x===t)});if(t==='oversikt')render()}
+$('t-ny').onclick=()=>show('ny');$('t-oversikt').onclick=()=>show('oversikt');
+$('g-art').onclick=()=>{group='art';render()};$('g-mnd').onclick=()=>{group='mnd';render()};
+function seasons(){const s=new Set(load().map(e=>seasonOf(e.date)));s.add(seasonOf(today()));return[...s].sort((a,b)=>b-a)}
+function render(){
+ const cur=$('season').value;$('season').innerHTML=seasons().map(y=>`<option value="${y}">${y}/${String(y+1).slice(2)} (aug–jul)</option>`).join('');
+ if(cur&&[...$('season').options].some(o=>o.value===cur))$('season').value=cur;
+ $('g-art').classList.toggle('on',group==='art');$('g-mnd').classList.toggle('on',group==='mnd');
+ const y=+$('season').value,e=load().filter(x=>seasonOf(x.date)===y).sort((a,b)=>b.date.localeCompare(a.date));
+ if(!e.length){$('list').innerHTML=`<div class="empty">Ingen fangster logget i sesongen ${y}/${String(y+1).slice(2)} ennå</div>`;return}
+ const g={};e.forEach(x=>{const k=group==='art'?x.species:x.date.slice(0,7);(g[k]=g[k]||[]).push(x)});
+ let keys=Object.keys(g);keys.sort(group==='art'?(a,b)=>g[b].length-g[a].length||a.localeCompare(b,'no'):(a,b)=>a.localeCompare(b));
+ $('list').innerHTML=keys.map(k=>{const t=group==='art'?k:(m=>MND[+m[1]-1][0].toUpperCase()+MND[+m[1]-1].slice(1)+' '+m[0])(k.split('-'));
+  return `<h2>${esc(t)} <span class="cnt">${g[k].length}</span></h2><div class="grid">`+g[k].map(x=>`<div class="card" data-id="${x.id}">${x.photo?`<img src="${x.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${esc(x.species)}</b><br><small>${fmt(x.date)}</small></div></div>`).join('')+'</div>'}).join('');
+ document.querySelectorAll('.card').forEach(c=>c.onclick=()=>detail(c.dataset.id));
+}
+function detail(id){const x=load().find(e=>e.id===id);if(!x)return;
+ $('detail').innerHTML=`${x.photo?`<img src="${x.photo}" alt="">`:''}<h2>${esc(x.species)}</h2><p>Dato: ${fmt(x.date)}</p><p>Jaktområde: ${esc(x.area)||'–'}</p><p>Notater: ${esc(x.notes)||'–'}</p>
+ <button class="btn danger" id="del">Slett fangst</button><button class="btn sec" id="close" style="margin-top:8px">Lukk</button>`;
+ $('m').classList.add('open');$('close').onclick=()=>$('m').classList.remove('open');
+ $('del').onclick=()=>{if(confirm('Slette denne fangsten?')){save(load().filter(e=>e.id!==id));$('m').classList.remove('open');render()}}}
+$('m').onclick=e=>{if(e.target.id==='m')$('m').classList.remove('open')};
+$('photo').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas'),s=Math.min(1,1200/Math.max(i.width,i.height));c.width=Math.round(i.width*s);c.height=Math.round(i.height*s);c.getContext('2d').drawImage(i,0,0,c.width,c.height);photo=c.toDataURL('image/jpeg',.75);$('preview').src=photo;$('preview').style.display='block'};i.src=r.result};r.readAsDataURL(f)};
+function resetForm(){$('f').reset();photo='';$('preview').style.display='none';$('other').classList.add('hide');$('date').value=today()}
+$('f').onsubmit=ev=>{ev.preventDefault();let sp=$('species').value;if(sp==='Annet'){sp=$('other').value.trim();if(!sp){alert('Skriv inn art.');return}}
+ const a=load();a.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),species:sp,date:$('date').value,area:$('area').value.trim(),notes:$('notes').value.trim(),photo});
+ try{save(a)}catch(err){alert('Lagringsplassen i nettleseren er full. Slett noen fangster og prøv igjen.');return}
+ resetForm();$('season').value=String(seasonOf(a[a.length-1].date));show('oversikt')};
+resetForm();
 </script></body></html>
