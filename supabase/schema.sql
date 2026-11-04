@@ -5,6 +5,7 @@ create table if not exists public.entries (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null references auth.users(id) on delete cascade default auth.uid(),
   species    text not null,
+  country    text not null default 'NO' check (country in ('NO','SE')),  -- Norge/Sverige
   taken_at   timestamptz not null,
   sted       text,
   lat        double precision,
@@ -13,6 +14,9 @@ create table if not exists public.entries (
   photos     text[] not null default '{}',   -- stier i storage-bøtta 'photos'
   created_at timestamptz not null default now()
 );
+-- Eldre prosjekter: legg til land-kolonnen (trygt å kjøre flere ganger)
+alter table public.entries add column if not exists country text not null default 'NO';
+
 create index if not exists entries_user_taken_idx on public.entries (user_id, taken_at desc);
 
 alter table public.entries enable row level security;
