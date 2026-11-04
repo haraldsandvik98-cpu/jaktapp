@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Jaktlogg</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root{--g:#7fb069;--gd:#4f7f3a;--t:#eef3ea;--m:#b7c4b0;--card:rgba(20,28,22,.62);--line:rgba(255,255,255,.12)}
 *{box-sizing:border-box}html,body{margin:0}
@@ -44,6 +46,10 @@ input[type=file]{padding:10px}input[type=date]{color-scheme:dark}
 .nphoto{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);color:#fff;font-size:12px;border-radius:999px;padding:2px 8px}.card{position:relative}
 .gal{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;border-radius:14px}.gal img{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:4/3;object-fit:cover;border-radius:14px}
 .dots{text-align:center;color:var(--m);font-size:13px;margin-top:6px}
+.map{height:220px;border-radius:12px;margin-top:8px;border:1px solid var(--line);z-index:0}.map.big{height:460px;margin-top:16px}
+.maprow{display:flex;gap:8px;margin-top:8px;align-items:center}.maprow .btn{width:auto;padding:9px 12px;font-size:14px}.maprow small{color:var(--m);font-size:12px;flex:1}
+.emk{font-size:22px;line-height:30px;text-align:center;background:rgba(14,20,15,.85);border:2px solid var(--g);border-radius:50%;width:34px!important;height:34px!important}
+.leaflet-popup-content{margin:8px;color:#111}.leaflet-popup-content img{width:150px;border-radius:8px;display:block;margin-bottom:4px}
 </style></head><body><div class="app">
 <header><h1>🦌 Jaktlogg</h1><div class="sub" id="hsub">Din private fangstlogg · lagres kun på denne enheten</div></header>
 <main id="view"></main>
@@ -60,7 +66,7 @@ const Store={_db:null,
  add(e){return this._tx('readwrite',s=>s.put(e))},
  delete(id){return this._tx('readwrite',s=>s.delete(id))},
  async migrate(){const raw=localStorage.getItem('jaktlogg.entries');if(!raw)return;
-  for(const e of JSON.parse(raw)){await this.add({id:e.id,species:e.species,datetime:e.datetime||e.date+'T12:00',sted:e.sted??e.area??'',notes:e.notes||'',photos:e.photos||(e.photo?[e.photo]:[])})}
+  for(const e of JSON.parse(raw)){await this.add({id:e.id,species:e.species,datetime:e.datetime||e.date+'T12:00',sted:e.sted??e.area??'',notes:e.notes||'',photos:e.photos||(e.photo?[e.photo]:[]),...(e.lat!=null?{lat:e.lat,lng:e.lng}:{})})}
   localStorage.removeItem('jaktlogg.entries')}};
 
 /* Arter med jakttid i FOR-2022-01-21-128 (Lovdata) */
@@ -70,6 +76,13 @@ const MND=['januar','februar','mars','april','mai','juni','juli','august','septe
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
 const nowLocal=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
 const fmt=dt=>{const[d,t]=dt.split('T');return d.split('-').reverse().join('.')+(t?' kl. '+t:'')};
+const EMO=Object.fromEntries(GROUPS.flatMap(g=>g[1]));
+function topo(el,opt){const m=L.map(el,Object.assign({zoomControl:true},opt||{}));let fb=false;
+ const kv=L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png',{maxZoom:18,attribution:'© <a href="https://www.kartverket.no/">Kartverket</a>'}).addTo(m);
+ kv.on('tileerror',()=>{if(fb)return;fb=true;m.removeLayer(kv);L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenTopoMap (CC-BY-SA), © OpenStreetMap'}).addTo(m)});
+ return m}
+const NORGE=[[57.9,4.5],[71.2,31.1]];
+const icon=sp=>L.divIcon({className:'emk',html:EMO[sp]||'📍',iconSize:[34,34],iconAnchor:[17,17]});
 let tab='arter',yearSel=null,group='art',pending=[];
 
 function setTab(t){tab=t;$('t-arter').classList.toggle('on',t==='arter');$('t-ar').classList.toggle('on',t==='ar');t==='arter'?renderArter():renderAr()}
@@ -94,16 +107,27 @@ function renderForm(sp){pending=[];
  $('view').innerHTML=`<button class="back" id="bk">‹ ${esc(sp)}</button><div class="panel"><h2 style="margin-top:0">Ny fangst: ${esc(sp)}</h2><form id="f">
  ${sp==='Annet'?'<label>Art<input id="other" placeholder="Skriv art" required></label>':''}
  <label>Sted (valgfritt)<input id="sted" placeholder="f.eks. Trollheimen eller «ved Storvatnet»"></label>
+ <label>Posisjon på kart (valgfritt)</label><div class="map" id="fmap"></div>
+ <div class="maprow"><button type="button" class="btn sec" id="gps">📍 Bruk min posisjon</button><button type="button" class="btn sec" id="clr">Fjern</button><small id="pos">Trykk på kartet for å sette en nål</small></div>
  <label>Dato og tid<input type="datetime-local" id="dt" required value="${nowLocal()}"></label>
  <label>Bilder<input type="file" id="photos" accept="image/*" multiple></label><div class="thumbs" id="th"></div>
  <label>Notater (valgfritt)<textarea id="notes" rows="3"></textarea></label>
  <button class="btn" style="margin-top:16px">Lagre</button></form></div>`;
  $('bk').onclick=()=>renderSpecies(sp);
+ let ll=null,pin=null;const fm=topo('fmap');fm.fitBounds(NORGE);
+ const setPos=(p,zoom)=>{ll={lat:+p.lat.toFixed(5),lng:+p.lng.toFixed(5)};if(!pin){pin=L.marker(p,{draggable:true,icon:icon(sp)}).addTo(fm);pin.on('dragend',()=>setPos(pin.getLatLng()))}else pin.setLatLng(p);
+  if(zoom)fm.setView(p,13);$('pos').textContent=`${ll.lat}, ${ll.lng} · dra nålen for å justere`};
+ fm.on('click',e=>setPos(e.latlng));
+ $('clr').onclick=()=>{if(pin)fm.removeLayer(pin);pin=null;ll=null;$('pos').textContent='Trykk på kartet for å sette en nål'};
+ $('gps').onclick=()=>{if(!navigator.geolocation){$('pos').textContent='Posisjon er ikke tilgjengelig i denne nettleseren';return}
+  $('pos').textContent='Henter posisjon …';navigator.geolocation.getCurrentPosition(p=>setPos(L.latLng(p.coords.latitude,p.coords.longitude),true),
+  e=>{$('pos').textContent=e.code===1?'Tilgang til posisjon ble avslått. Trykk på kartet i stedet.':'Fant ikke posisjonen. Trykk på kartet i stedet.'},{enableHighAccuracy:true,timeout:15000})};
+ window._fm=fm;window._setPos=setPos;
  const th=()=>{$('th').innerHTML=pending.map((p,i)=>`<div><img src="${p}" alt=""><button type="button" data-i="${i}" aria-label="Fjern">×</button></div>`).join('');
   $('th').querySelectorAll('button').forEach(b=>b.onclick=()=>{pending.splice(+b.dataset.i,1);th()})};
  $('photos').onchange=async e=>{for(const f of e.target.files)pending.push(await shrink(f));e.target.value='';th()};
  $('f').onsubmit=async ev=>{ev.preventDefault();const species=sp==='Annet'?$('other').value.trim():sp;
-  try{await Store.add({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),species,datetime:$('dt').value,sted:$('sted').value.trim(),notes:$('notes').value.trim(),photos:pending})}
+  try{await Store.add({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),species,datetime:$('dt').value,sted:$('sted').value.trim(),notes:$('notes').value.trim(),photos:pending,...(ll?{lat:ll.lat,lng:ll.lng}:{})})}
   catch(err){alert('Kunne ikke lagre: lagringsplassen kan være full.');return}
   renderSpecies(sp)};scrollTo(0,0)}
 
@@ -111,9 +135,10 @@ function shrink(f){return new Promise(ok=>{const r=new FileReader();r.onload=()=
 
 async function detail(id,refresh){const x=(await Store.list()).find(e=>e.id===id);if(!x)return;const n=x.photos.length;
  $('detail').innerHTML=(n?`<div class="gal" id="gal">${x.photos.map(p=>`<img src="${p}" alt="">`).join('')}</div><div class="dots" id="dots">Bilde 1 av ${n}${n>1?' · sveip for flere':''}</div>`:'')+
- `<h2>${esc(x.species)}</h2><p>🕒 <b>${fmt(x.datetime)}</b></p><p>📍 Sted: <b>${esc(x.sted)||'–'}</b></p><p>Notater: <b>${esc(x.notes)||'–'}</b></p>
+ `<h2>${esc(x.species)}</h2><p>🕒 <b>${fmt(x.datetime)}</b></p><p>📍 Sted: <b>${esc(x.sted)||'–'}</b></p><p>Notater: <b>${esc(x.notes)||'–'}</b></p>${x.lat!=null?'<div class="map" id="dmap"></div>':''}
  <button class="btn danger" id="del" style="margin-top:14px">Slett fangst</button><button class="btn sec" id="close" style="margin-top:8px">Lukk</button>`;
  $('m').classList.add('open');if(n>1)$('gal').onscroll=e=>{const i=Math.round(e.target.scrollLeft/e.target.clientWidth)+1;$('dots').textContent=`Bilde ${i} av ${n} · sveip for flere`};
+ if(x.lat!=null){const dm=topo('dmap',{dragging:true});dm.setView([x.lat,x.lng],12);L.marker([x.lat,x.lng],{icon:icon(x.species)}).addTo(dm)}
  $('close').onclick=()=>$('m').classList.remove('open');
  $('del').onclick=async()=>{if(confirm('Slette denne fangsten?')){await Store.delete(id);$('m').classList.remove('open');refresh()}}}
 $('m').onclick=e=>{if(e.target.id==='m')$('m').classList.remove('open')};
@@ -127,10 +152,15 @@ async function renderAr(){const all=await Store.list();const years=[...new Set(a
  const title=k=>group==='art'?k:(m=>MND[+m-1][0].toUpperCase()+MND[+m-1].slice(1))(k.slice(5));
  $('view').innerHTML=`<div class="panel"><div class="chips">${years.map(y=>`<button data-y="${y}" class="${y===yearSel?'on':''}">${y}</button>`).join('')}</div>
  <div class="total">${e.length} <small>fangst${e.length===1?'':'er'} i ${yearSel}</small></div>
- <div class="seg"><button id="g-art" class="${group==='art'?'on':''}">Per art</button><button id="g-mnd" class="${group==='mnd'?'on':''}">Per måned</button></div></div>`+
- keys.map(k=>`<h2>${esc(title(k))} <span class="cnt">${g[k].length}</span></h2><div class="grid">${g[k].map(card).join('')}</div>`).join('');
+ <div class="seg"><button id="g-art" class="${group==='art'?'on':''}">Per art</button><button id="g-mnd" class="${group==='mnd'?'on':''}">Per måned</button><button id="g-kart" class="${group==='kart'?'on':''}">Kart</button></div></div>`+(group==='kart'?'<div class="map big" id="ymap"></div><p class="credit" id="ynote"></p>':''+
+ keys.map(k=>`<h2>${esc(title(k))} <span class="cnt">${g[k].length}</span></h2><div class="grid">${g[k].map(card).join('')}</div>`).join(''));
  document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>{yearSel=+b.dataset.y;renderAr()});
- $('g-art').onclick=()=>{group='art';renderAr()};$('g-mnd').onclick=()=>{group='mnd';renderAr()};bindCards(renderAr)}
+ $('g-art').onclick=()=>{group='art';renderAr()};$('g-mnd').onclick=()=>{group='mnd';renderAr()};$('g-kart').onclick=()=>{group='kart';renderAr()};bindCards(renderAr);
+ if(group==='kart'){const ym=topo('ymap'),pts=e.filter(x=>x.lat!=null);
+  pts.forEach(x=>L.marker([x.lat,x.lng],{icon:icon(x.species)}).addTo(ym).bindPopup(`${x.photos[0]?`<img src="${x.photos[0]}" alt="">`:''}<b>${esc(x.species)}</b><br>${fmt(x.datetime)}${x.sted?'<br>📍 '+esc(x.sted):''}<br><a href="#" data-open="${x.id}">Åpne fangst</a>`));
+  ym.on('popupopen',ev=>{const a=ev.popup.getElement().querySelector('[data-open]');if(a)a.onclick=z=>{z.preventDefault();detail(a.dataset.open,renderAr)}});
+  pts.length?ym.fitBounds(L.latLngBounds(pts.map(x=>[x.lat,x.lng])).pad(.3),{maxZoom:11}):ym.fitBounds(NORGE);
+  $('ynote').textContent=`${pts.length} av ${e.length} fangster har kartposisjon`}}
 
 Store.migrate().then(renderArter);
 </script></body></html>
