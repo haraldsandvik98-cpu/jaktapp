@@ -28,7 +28,7 @@ input[type=file]{padding:10px}input[type=date]{color-scheme:dark}
 .card div{padding:8px 10px 10px;font-size:14px}.card small{color:var(--m);display:block}.card .pin{padding:2px 0 0;font-size:12px;color:var(--g);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cnt{background:var(--g);color:#0d160e;border-radius:999px;padding:1px 10px;font-size:13px;font-weight:700}
 .seg{display:flex;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:12px;padding:3px;margin-top:12px}
-.seg button{flex:1;border:0;background:none;color:var(--m);padding:9px;border-radius:9px;font-size:14px;font-family:inherit}.seg .on{background:rgba(255,255,255,.92);color:#13200f;font-weight:700}
+.lk a{color:#bfe3a4}.seg button{flex:1;border:0;background:none;color:var(--m);padding:9px;border-radius:9px;font-size:14px;font-family:inherit}.seg .on{background:rgba(255,255,255,.92);color:#13200f;font-weight:700}
 .tabs{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:366px;display:flex;gap:4px;padding:5px;background:rgba(14,20,15,.82);border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(16px);box-shadow:0 8px 30px rgba(0,0,0,.45);z-index:6}
 .tabs button{flex:1;border:0;background:none;padding:11px;font-size:15px;color:var(--m);border-radius:13px;font-family:inherit}.tabs .on{color:#0d160e;background:var(--g);font-weight:700}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:9}.modal.open{display:flex}
@@ -193,7 +193,7 @@ let Store=LocalStore;
 async function initBackend(){const c=cfg();sb=null;sbUser=null;Store=LocalStore;if(!c)return 'local';
  try{await loadLib();sb=window.supabase.createClient(c.url,c.key,{auth:{persistSession:true,detectSessionInUrl:true}});
   const{data}=await sb.auth.getSession();sbUser=data.session&&data.session.user;
-  sb.auth.onAuthStateChange((_e,sess)=>{const was=!!sbUser;sbUser=sess&&sess.user;Store=sbUser?SupabaseStore:LocalStore;if(was!==!!sbUser)setTab(tab)});
+  sb.auth.onAuthStateChange((ev,sess)=>{const was=!!sbUser;sbUser=sess&&sess.user;Store=sbUser?SupabaseStore:LocalStore;if(ev==='PASSWORD_RECOVERY'){RECOVERY=true;setTimeout(renderRecovery,0);return}if(was!==!!sbUser&&!RECOVERY)setTab(tab)});
   if(sbUser){Store=SupabaseStore;return 'server'}return 'login'}catch(e){console.warn(e);return 'local'}}
 const modeText=()=>sbUser?`Lagres privat på din server · ${esc(sbUser.email)}`:(cfg()?'Ikke innlogget · lagres kun på denne enheten':'Din private fangstlogg · lagres kun på denne enheten');
 
@@ -205,29 +205,78 @@ async function renderSettings(){const c=cfg()||{url:'',key:''};const n=(await Lo
  <p style="color:var(--m);font-size:12px">Bruk kun den offentlige anon-nøkkelen. Lim aldri inn service_role- eller secret-nøkkelen.</p>
  <div class="maprow"><button class="btn" id="ss" style="flex:1">Lagre</button>${cfg()?'<button class="btn sec" id="sx">Koble fra</button>':''}</div><p id="smsg" style="font-size:14px;color:var(--m)"></p></div>
  <div class="panel" style="margin-top:14px"><h2 style="margin-top:0">Konto</h2><p style="color:var(--m);font-size:14px;margin:0 0 10px">${modeText()}</p>
- ${!cfg()?'<p style="font-size:14px;color:var(--m)">Legg inn Project URL og nøkkel over for å kunne logge inn.</p>':sbUser?`<button class="btn sec" id="lo">Logg ut</button>${n?`<button class="btn" id="mig" style="margin-top:8px">Flytt lokale fangster til server (${n})</button>`:''}<p id="mmsg" style="font-size:14px;color:var(--m)"></p>`:'<button class="btn" id="li">Logg inn</button>'}</div>`;
- $('ss').onclick=async()=>{const url=$('su').value.trim().replace(/\/+$/,''),key=$('sk').value.trim();
+ ${!cfg()?'<p style="font-size:14px;color:var(--m)">Legg inn Project URL og nøkkel over for å kunne logge inn.</p>':sbUser?`<form id="spf" style="margin-bottom:10px"><label>Sett passord (for innlogging uten e-postlenke)<input id="sp1" type="password" minlength="6" required autocomplete="new-password" placeholder="Nytt passord, minst 6 tegn"></label><input id="sp2" type="password" minlength="6" required autocomplete="new-password" placeholder="Gjenta passord" style="margin-top:6px"><button class="btn" style="margin-top:8px">Sett passord</button><p id="spm" style="font-size:14px;color:var(--m)"></p></form><button class="btn sec" id="lo">Logg ut</button>${n?`<button class="btn" id="mig" style="margin-top:8px">Flytt lokale fangster til server (${n})</button>`:''}<p id="mmsg" style="font-size:14px;color:var(--m)"></p>`:'<button class="btn" id="li">Logg inn</button>'}</div>`;
+ $('ss').onclick=async()=>{const url=$('su').value.trim().replace(/\/+$/,'').replace(/\/(rest|auth|storage)\/v1.*$/i,'').replace(/\/+$/,''),key=$('sk').value.trim();
   if(!/^https:\/\/.+/.test(url)||!key){$('smsg').textContent='Fyll inn både URL og nøkkel.';return}
   if(keyRole(key)==='service_role'){$('smsg').textContent='Dette er en service_role/secret-nøkkel. Den skal aldri brukes i appen. Bruk anon-nøkkelen.';return}
   localStorage.setItem(CFG_KEY,JSON.stringify({url,key}));const m=await initBackend();$('smsg').textContent=m==='local'?'Kunne ikke koble til. Sjekk URL og nøkkel.':'Lagret.';if(m==='login')renderLogin();else renderSettings()};
  if($('sx'))$('sx').onclick=async()=>{if(sb)await sb.auth.signOut().catch(()=>{});localStorage.removeItem(CFG_KEY);await initBackend();renderSettings();$('hsub').textContent=modeText()};
- if($('li'))$('li').onclick=renderLogin;
+ if($('li'))$('li').onclick=()=>renderLogin();
+ if($('spf'))$('spf').onsubmit=async ev=>{ev.preventDefault();const a=$('sp1').value;if(a.length<6)return $('spm').textContent='Passordet må ha minst 6 tegn.';if(a!==$('sp2').value)return $('spm').textContent='Passordene er ikke like.';$('spm').textContent='Lagrer …';const{error}=await sb.auth.updateUser({password:a});$('spm').textContent=error?errNo(error):'Passordet er satt. Du kan nå logge inn med e-post og passord.';if(!error)$('spf').reset()};
  if($('lo'))$('lo').onclick=async()=>{await sb.auth.signOut();sbUser=null;Store=LocalStore;renderSettings();$('hsub').textContent=modeText()};
  if($('mig'))$('mig').onclick=async()=>{if(!confirm(`Flytte ${n} lokale fangster til serveren? De slettes fra enheten når de er lastet opp.`))return;
   const list=await LocalStore.list();let ok=0;for(const e of list){try{$('mmsg').textContent=`Laster opp ${ok+1} av ${list.length} …`;await SupabaseStore.add(e);await LocalStore.delete(e.id);ok++}catch(err){$('mmsg').textContent=`Stoppet etter ${ok}: ${err.message}`;return}}
   $('mmsg').textContent=`Ferdig: ${ok} fangster flyttet.`;setTimeout(renderSettings,1200)};
  $('hsub').textContent=modeText();scrollTo(0,0)}
 
-function renderLogin(){$('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Logg inn</h2>
- <p style="color:var(--m);font-size:14px;margin:0">Skriv inn e-posten din, så får du en innloggingslenke. Fangstene dine er private og bare synlige for deg.</p>
- <form id="lf"><label>E-post<input id="em" type="email" required placeholder="navn@eksempel.no" autocomplete="email"></label>
- <button class="btn" style="margin-top:14px">Send innloggingslenke</button></form><p id="lmsg" style="font-size:14px;color:var(--m)"></p>
+const PAGE_URL=location.origin+location.pathname;
+let HASH_ERR=(()=>{const q=new URLSearchParams(location.hash.slice(1)+'&'+location.search.slice(1));const d=q.get('error_description')||q.get('error');if(d){history.replaceState(null,'',PAGE_URL)}return d?{message:d.replace(/\+/g,' '),code:q.get('error_code')||''}:null})();
+let RECOVERY=/type=recovery/.test(location.hash);
+function errNo(e){if(!e)return '';const m=((e.code||'')+' '+(e.message||e)).toLowerCase();
+ if(/rate.?limit|over_email_send_rate|too many/.test(m))return 'For mange e-poster, vent en time eller bruk passord.';
+ if(/invalid.?(login|credentials)|invalid_credentials/.test(m))return 'Feil e-post eller passord.';
+ if(/not.?confirmed|email_not_confirmed/.test(m))return 'E-posten er ikke bekreftet ennå. Trykk på lenken i bekreftelses-e-posten, eller slå av «Confirm email» i Supabase (Authentication → Providers → Email).';
+ if(/already.?(registered|exists)|user_already_exists|email_exists/.test(m))return 'Det finnes allerede en bruker med denne e-posten. Logg inn med passord, eller bruk «Glemt passord».';
+ if(/otp_expired|expired|invalid.*link|access_denied/.test(m))return 'Lenken er utløpt eller ugyldig. Logg inn med passord, eller be om en ny lenke.';
+ if(/weak|at least 6|password should/.test(m))return 'Passordet er for svakt (minst 6 tegn).';
+ if(/same_password|different from the old/.test(m))return 'Det nye passordet må være forskjellig fra det gamle.';
+ if(/signup.*disabled|signups not allowed/.test(m))return 'Nye brukere er slått av i Supabase-prosjektet.';
+ if(/failed to fetch|network/.test(m))return 'Fikk ikke kontakt med serveren. Sjekk nettet og Project URL.';
+ return 'Feil: '+(e.message||e)}
+const P=(id,t)=>`<p id="${id}" style="font-size:14px;color:var(--m)">${t||''}</p>`;
+function renderLogin(mode,msg){mode=mode||'pw';if(!msg&&HASH_ERR){msg=errNo(HASH_ERR);HASH_ERR=null}
+ const tabs=`<div class="seg" style="margin:10px 0 4px"><button type="button" id="mpw" class="${mode==='pw'?'on':''}">Logg inn med passord</button><button type="button" id="msu" class="${mode==='su'?'on':''}">Ny bruker? Opprett konto</button></div>`;
+ let body='';
+ if(mode==='pw')body=`<form id="lf"><label>E-post<input id="em" type="email" required placeholder="navn@eksempel.no" autocomplete="email"></label>
+ <label>Passord<input id="pw" type="password" required autocomplete="current-password" placeholder="Passord"></label>
+ <button class="btn" style="margin-top:14px">Logg inn</button></form>
+ <p class="lk" style="font-size:14px;margin:12px 0 0;line-height:1.9"><a href="#" id="fg">Glemt passord?</a><br><a href="#" id="ml">Send innloggingslenke i stedet</a></p>`;
+ else if(mode==='su')body=`<form id="lf"><label>E-post<input id="em" type="email" required placeholder="navn@eksempel.no" autocomplete="email"></label>
+ <label>Passord (minst 6 tegn)<input id="pw" type="password" required minlength="6" autocomplete="new-password"></label>
+ <label>Gjenta passord<input id="pw2" type="password" required minlength="6" autocomplete="new-password"></label>
+ <button class="btn" style="margin-top:14px">Opprett konto</button></form>
+ <p style="font-size:13px;color:var(--m);margin:10px 0 0">Kontoen opprettes i ditt eget Supabase-prosjekt. Er «Confirm email» på, må e-posten bekreftes én gang.</p>`;
+ else if(mode==='fg')body=`<form id="lf"><p style="font-size:14px;color:var(--m);margin:6px 0 0">Vi sender en lenke for å velge nytt passord.</p><label>E-post<input id="em" type="email" required placeholder="navn@eksempel.no" autocomplete="email"></label>
+ <button class="btn" style="margin-top:14px">Send lenke for nytt passord</button></form><p class="lk" style="font-size:14px;margin:10px 0 0"><a href="#" id="bk">← Tilbake til innlogging</a></p>`;
+ else body=`<form id="lf"><p style="font-size:14px;color:var(--m);margin:6px 0 0">Du får en innloggingslenke på e-post. Supabase begrenser hvor mange e-poster som kan sendes per time.</p><label>E-post<input id="em" type="email" required placeholder="navn@eksempel.no" autocomplete="email"></label>
+ <button class="btn" style="margin-top:14px">Send innloggingslenke</button></form><p class="lk" style="font-size:14px;margin:10px 0 0"><a href="#" id="bk">← Logg inn med passord</a></p>`;
+ $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">${mode==='su'?'Opprett konto':mode==='fg'?'Glemt passord':'Logg inn'}</h2>
+ <p style="color:var(--m);font-size:14px;margin:0">Fangstene dine er private og bare synlige for deg.</p>${mode==='pw'||mode==='su'?tabs:''}${body}${P('lmsg',msg)}
  <button class="btn sec" id="lb" style="margin-top:6px">Fortsett uten innlogging (kun på denne enheten)</button></div>`;
+ const go=(m)=>e=>{e&&e.preventDefault();renderLogin(m)};
+ if($('mpw'))$('mpw').onclick=go('pw');if($('msu'))$('msu').onclick=go('su');if($('fg'))$('fg').onclick=go('fg');if($('ml'))$('ml').onclick=go('ml');if($('bk'))$('bk').onclick=go('pw');
  $('lb').onclick=()=>setTab('arter');
- $('lf').onsubmit=async ev=>{ev.preventDefault();if(!sb){$('lmsg').textContent='Supabase er ikke satt opp under Innstillinger.';return}
-  $('lmsg').textContent='Sender …';const{error}=await sb.auth.signInWithOtp({email:$('em').value.trim(),options:{emailRedirectTo:location.origin+location.pathname}});
-  $('lmsg').textContent=error?'Feil: '+error.message:'Sjekk e-posten din og trykk på lenken for å logge inn.'};scrollTo(0,0)}
+ const say=t=>$('lmsg').textContent=t;
+ $('lf').onsubmit=async ev=>{ev.preventDefault();if(!sb){say('Supabase er ikke satt opp under Innstillinger.');return}
+  const email=$('em').value.trim(),btn=$('lf').querySelector('button');btn.disabled=true;say('Vent …');
+  try{
+   if(mode==='pw'){const{error}=await sb.auth.signInWithPassword({email,password:$('pw').value});if(error)return say(errNo(error));sbUser=(await sb.auth.getUser()).data.user;Store=SupabaseStore;$('hsub').textContent=modeText();setTab('arter')}
+   else if(mode==='su'){const pw=$('pw').value;if(pw.length<6)return say('Passordet må ha minst 6 tegn.');if(pw!==$('pw2').value)return say('Passordene er ikke like.');
+    const{data,error}=await sb.auth.signUp({email,password:pw,options:{emailRedirectTo:PAGE_URL}});if(error)return say(errNo(error));
+    if(data.session){sbUser=data.session.user;Store=SupabaseStore;$('hsub').textContent=modeText();setTab('arter')}
+    else if(data.user&&Array.isArray(data.user.identities)&&!data.user.identities.length)say(errNo({code:'user_already_exists'}));
+    else say('Kontoen er opprettet, men «Confirm email» er på i Supabase. Bekreft én gang via lenken i e-posten, og logg deretter inn med passord. For en personlig app kan du i stedet slå av «Confirm email» under Authentication → Providers → Email.')}
+   else if(mode==='fg'){const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:PAGE_URL});say(error?errNo(error):'Sjekk e-posten din og trykk på lenken for å velge nytt passord.')}
+   else{const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:PAGE_URL}});say(error?errNo(error):'Sjekk e-posten din og trykk på lenken for å logge inn.')}
+  }finally{btn.disabled=false}};scrollTo(0,0)}
+function renderRecovery(){RECOVERY=false;tab='inn';['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn'));
+ $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Velg nytt passord</h2><form id="rf">
+ <label>Nytt passord (minst 6 tegn)<input id="np" type="password" required minlength="6" autocomplete="new-password"></label>
+ <label>Gjenta passord<input id="np2" type="password" required minlength="6" autocomplete="new-password"></label>
+ <button class="btn" style="margin-top:14px">Lagre nytt passord</button></form>${P('rmsg')}</div>`;
+ $('rf').onsubmit=async ev=>{ev.preventDefault();const pw=$('np').value;if(pw.length<6)return $('rmsg').textContent='Passordet må ha minst 6 tegn.';if(pw!==$('np2').value)return $('rmsg').textContent='Passordene er ikke like.';
+  const{error}=await sb.auth.updateUser({password:pw});if(error)return $('rmsg').textContent=errNo(error);$('rmsg').textContent='Passordet er lagret. Du er logget inn.';setTimeout(()=>setTab('arter'),1200)};scrollTo(0,0)}
 
 $('t-inn').onclick=()=>setTab('inn');$('cr').onclick=e=>{e.preventDefault();showCredits()};
-(async()=>{await LocalStore.migrate();const m=await initBackend();$('hsub').textContent=modeText();m==='login'?(tab='inn',['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn')),renderLogin()):renderArter()})();
+(async()=>{await LocalStore.migrate();const m=await initBackend();$('hsub').textContent=modeText();if(RECOVERY&&sbUser)return renderRecovery();if(HASH_ERR&&m!=='login'){const t=errNo(HASH_ERR);HASH_ERR=null;setTimeout(()=>alert(t),300)}m==='login'?(tab='inn',['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn')),renderLogin()):renderArter()})();
 </script></body></html>

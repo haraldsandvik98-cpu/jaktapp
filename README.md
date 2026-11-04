@@ -15,12 +15,20 @@ Flere krav kommer – appen bygges videre etter hvert.
 
 Uten oppsett lagres alt kun på enheten. Vil du ha fangstene privat på en server (og på flere enheter), kan du koble til ditt eget gratis Supabase-prosjekt:
 
-1. Gå til [supabase.com](https://supabase.com), lag en gratis konto og trykk **New project**. Velg navn, passord til databasen og region (f.eks. Stockholm/Frankfurt).
-2. Åpne **SQL Editor** i prosjektet, lim inn hele innholdet i [`supabase/schema.sql`](supabase/schema.sql) og trykk **Run**. Dette lager tabellen `entries` med radnivåsikkerhet (RLS) og en privat bildebøtte `photos` der hver bruker kun når sine egne filer.
-3. Gå til **Authentication → URL Configuration**: sett **Site URL** til `https://haraldsandvik98-cpu.github.io/jaktapp/` og legg samme adresse til under **Redirect URLs**. E-post-innlogging (magic link) er på som standard under **Authentication → Providers → Email**.
-4. Gå til **Project Settings → API** (eller **API Keys**) og kopier **Project URL** og **anon / publishable key**. Bruk aldri `service_role`/secret-nøkkelen i appen. Appen avviser den.
-5. Åpne appen → **Innstillinger**, lim inn URL og nøkkel og trykk **Lagre**. Logg inn med e-post og trykk på lenken du får.
-6. Har du fangster lagret lokalt fra før, trykk **Flytt lokale fangster til server** under Innstillinger.
+1. Gå til [supabase.com](https://supabase.com), lag en gratis konto og trykk **New project**.
+2. Åpne **SQL Editor**, lim inn hele [`supabase/schema.sql`](supabase/schema.sql) og trykk **Run**. Dette lager tabellen `entries` med radnivåsikkerhet (RLS) og en privat bildebøtte `photos` der hver bruker kun når sine egne filer.
+3. **Authentication → URL Configuration:** sett **Site URL** til `https://haraldsandvik98-cpu.github.io/jaktapp/` og legg samme adresse til under **Redirect URLs** (brukes av bekreftelses-, innloggings- og «glemt passord»-lenker).
+4. *Valgfritt, anbefalt for en personlig app:* **Authentication → Providers → Email** → slå av **Confirm email**. Da kan du opprette konto med passord og være innlogget med en gang, uten e-post.
+5. **Project Settings → API** (eller **API Keys**): kopier **Project URL** (`https://xxxx.supabase.co`, appen fjerner selv `/rest/v1` o.l.) og **anon / publishable key**. Bruk aldri `service_role`/secret-nøkkelen. Appen avviser den.
+6. Appen → **Innstillinger**: lim inn URL og nøkkel og trykk **Lagre**.
+7. Innlogging:
+   - **Ny bruker? Opprett konto:** e-post + passord (minst 6 tegn).
+   - **Logg inn med passord:** standard. Gir ingen e-post, så du unngår Supabase sin grense «email rate limit exceeded».
+   - **Glemt passord?:** sender en lenke, og du velger nytt passord i appen.
+   - **Send innloggingslenke i stedet:** e-postlenke som reserve. Har du logget inn med lenke, kan du sette passord under **Innstillinger → Konto → Sett passord**.
+8. Har du fangster lagret lokalt fra før, trykk **Flytt lokale fangster til server** under Innstillinger.
+
+Supabase sin innebygde e-posttjeneste sender bare noen få e-poster i timen. Får du «For mange e-poster», vent en time eller bruk passord.
 
 Anon-nøkkelen er offentlig etter design. Det er RLS-reglene i `schema.sql` som sørger for at bare du ser dine fangster og bilder.
 
