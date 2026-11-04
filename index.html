@@ -33,67 +33,104 @@ input[type=file]{padding:10px}input[type=date]{color-scheme:dark}
 .sheet{background:#18221a;color:var(--t);width:100%;max-width:390px;border-radius:22px 22px 0 0;padding:18px;max-height:90vh;overflow:auto;border-top:1px solid var(--line)}.sheet img{width:100%;border-radius:14px}
 .sheet p{margin:6px 0;color:var(--m)}.sheet p b{color:var(--t)}
 .hide{display:none}.credit{text-align:center;font-size:11px;color:#8b998a;margin:24px 0 0}.credit a{color:#a9bba4}
+.tiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 8px;text-align:center;cursor:pointer;backdrop-filter:blur(12px);color:var(--t);font:inherit}
+.tile .e{font-size:26px}.tile b{display:block;font-size:14px;margin-top:4px}.tile small{color:var(--m);font-size:12px}.tile.has small{color:var(--g);font-weight:700}
+.back{background:none;border:0;color:var(--g);font:inherit;font-size:15px;padding:0;cursor:pointer;margin-bottom:6px}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.thumbs div{position:relative;width:76px;height:76px}.thumbs img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+.thumbs button{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;border:0;background:#c0483f;color:#fff;font-weight:700;cursor:pointer;line-height:1}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0}.chips button{border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--t);border-radius:999px;padding:8px 16px;font:inherit;font-size:15px;cursor:pointer}.chips .on{background:var(--g);color:#0d160e;font-weight:700}
+.total{font-size:34px;font-weight:800;margin:12px 0 0}.total small{font-size:14px;color:var(--m);font-weight:500}
+.nphoto{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);color:#fff;font-size:12px;border-radius:999px;padding:2px 8px}.card{position:relative}
+.gal{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;border-radius:14px}.gal img{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:4/3;object-fit:cover;border-radius:14px}
+.dots{text-align:center;color:var(--m);font-size:13px;margin-top:6px}
 </style></head><body><div class="app">
-<header><h1>🦌 Jaktlogg</h1><div class="sub" id="hsub"></div></header>
-<section id="s-ny">
-<div class="panel"><h2 style="margin-top:0">Ny fangst</h2>
-<form id="f">
-<label>Bilde<input type="file" id="photo" accept="image/*"></label><img id="preview" alt="Forhåndsvisning">
-<label>Art<select id="species"></select></label>
-<input id="other" class="hide" placeholder="Skriv art">
-<label>Dato<input type="date" id="date" required></label>
-<label>Sted (valgfritt)<input id="sted" placeholder="f.eks. Trollheimen eller «ved Storvatnet»"></label>
-<label>Notater (valgfritt)<textarea id="notes" rows="3"></textarea></label>
-<button class="btn" style="margin-top:16px">Lagre</button>
-</form></div></section>
-<section id="s-oversikt" class="hide">
-<div class="panel" style="padding:12px 14px"><label style="margin-top:0">Sesong<select id="season"></select></label>
-<div class="seg"><button id="g-art" class="on">Per art</button><button id="g-mnd">Per måned</button></div></div>
-<div id="list"></div></section>
+<header><h1>🦌 Jaktlogg</h1><div class="sub" id="hsub">Din private fangstlogg · lagres kun på denne enheten</div></header>
+<main id="view"></main>
 <p class="credit">Bakgrunn: «River in the heart of Trollheimen mountains», Jakub Fryš, <a href="https://commons.wikimedia.org/wiki/File:River_in_the_heart_of_Trollheimen_mountains.jpg">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a></p>
-<nav class="tabs"><button id="t-ny" class="on">+ Ny fangst</button><button id="t-oversikt">Oversikt</button></nav>
+<nav class="tabs"><button id="t-arter" class="on">Arter</button><button id="t-ar">År</button></nav>
 </div>
 <div class="modal" id="m"><div class="sheet" id="detail"></div></div>
 <script>
-const K='jaktlogg.entries',$=id=>document.getElementById(id),esc=s=>String(s||'').replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
-const ARTER=['Elg','Hjort','Rådyr','Villrein','Rype','Hare','Storfugl','Orrfugl','Jerpe','Rev','Gaupe','Ender','Gjess','Annet'];
+/* ---------- Lagring: privat, på enheten (IndexedDB) ---------- */
+const Store={_db:null,
+ open(){return this._db||(this._db=new Promise((ok,err)=>{const r=indexedDB.open('jaktlogg',1);r.onupgradeneeded=()=>r.result.createObjectStore('entries',{keyPath:'id'});r.onsuccess=()=>ok(r.result);r.onerror=()=>err(r.error)}))},
+ async _tx(mode,fn){const db=await this.open();return new Promise((ok,err)=>{const t=db.transaction('entries',mode),s=t.objectStore('entries'),r=fn(s);t.oncomplete=()=>ok(r&&r.result);t.onerror=()=>err(t.error)})},
+ list(){return this._tx('readonly',s=>s.getAll()).then(a=>a||[])},
+ add(e){return this._tx('readwrite',s=>s.put(e))},
+ delete(id){return this._tx('readwrite',s=>s.delete(id))},
+ async migrate(){const raw=localStorage.getItem('jaktlogg.entries');if(!raw)return;
+  for(const e of JSON.parse(raw)){await this.add({id:e.id,species:e.species,datetime:e.datetime||e.date+'T12:00',sted:e.sted??e.area??'',notes:e.notes||'',photos:e.photos||(e.photo?[e.photo]:[])})}
+  localStorage.removeItem('jaktlogg.entries')}};
+
+/* Arter med jakttid i FOR-2022-01-21-128 (Lovdata) */
+const GROUPS=[['Storvilt',[['Elg','🫎'],['Hjort','🦌'],['Rådyr','🦌'],['Rådyrbukk','🦌'],['Villsvin','🐗'],['Villrein','🦌']]],
+['Småvilt',[['Rype','🐦'],['Hare','🐇'],['Storfugl','🐦'],['Orrfugl','🐦'],['Jerpe','🐦'],['Rev','🦊'],['Grevling','🦡'],['Mår','🐾'],['Mink','🐾'],['Røyskatt','🐾'],['Bever','🦫'],['Ekorn','🐿️'],['Ender','🦆'],['Gjess','🪿'],['Ærfugl','🦆'],['Skarv','🐦‍⬛'],['Ringdue','🕊️'],['Rugde','🐦'],['Enkeltbekkasin','🐦'],['Kråkefugler','🐦‍⬛'],['Måker','🐦'],['Gråtrost','🐦'],['Fasan','🐓'],['Annet','➕']]]];
 const MND=['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
-let photo='',group='art';
-const load=()=>JSON.parse(localStorage.getItem(K)||'[]').map(e=>{if(e.sted==null){e.sted=e.area||'';delete e.area}return e}),save=a=>localStorage.setItem(K,JSON.stringify(a));
-const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
-// Sesong: 1. august – 31. juli
-const seasonOf=d=>{const[y,m]=d.split('-').map(Number);return m>=8?y:y-1};
-const fmt=d=>d.split('-').reverse().join('.');
-$('species').innerHTML=ARTER.map(a=>`<option>${a}</option>`).join('');
-$('species').onchange=()=>$('other').classList.toggle('hide',$('species').value!=='Annet');
-function show(t){['ny','oversikt'].forEach(x=>{$('s-'+x).classList.toggle('hide',x!==t);$('t-'+x).classList.toggle('on',x===t)});if(t==='oversikt')render()}
-$('t-ny').onclick=()=>show('ny');$('t-oversikt').onclick=()=>show('oversikt');
-$('g-art').onclick=()=>{group='art';render()};$('g-mnd').onclick=()=>{group='mnd';render()};
-function seasons(){const s=new Set(load().map(e=>seasonOf(e.date)));s.add(seasonOf(today()));return[...s].sort((a,b)=>b-a)}
-function render(){
- const cur=$('season').value;$('season').innerHTML=seasons().map(y=>`<option value="${y}">${y}/${String(y+1).slice(2)} (aug–jul)</option>`).join('');
- if(cur&&[...$('season').options].some(o=>o.value===cur))$('season').value=cur;
- $('g-art').classList.toggle('on',group==='art');$('g-mnd').classList.toggle('on',group==='mnd');
- const y=+$('season').value,e=load().filter(x=>seasonOf(x.date)===y).sort((a,b)=>b.date.localeCompare(a.date));
- if(!e.length){$('list').innerHTML=`<div class="empty">Ingen fangster logget i sesongen ${y}/${String(y+1).slice(2)} ennå</div>`;return}
- const g={};e.forEach(x=>{const k=group==='art'?x.species:x.date.slice(0,7);(g[k]=g[k]||[]).push(x)});
- let keys=Object.keys(g);keys.sort(group==='art'?(a,b)=>g[b].length-g[a].length||a.localeCompare(b,'no'):(a,b)=>a.localeCompare(b));
- $('list').innerHTML=keys.map(k=>{const t=group==='art'?k:(m=>MND[+m[1]-1][0].toUpperCase()+MND[+m[1]-1].slice(1)+' '+m[0])(k.split('-'));
-  return `<h2>${esc(t)} <span class="cnt">${g[k].length}</span></h2><div class="grid">`+g[k].map(x=>`<div class="card" data-id="${x.id}">${x.photo?`<img src="${x.photo}" alt="">`:'<div class="ph"></div>'}<div><b>${esc(x.species)}</b><br><small>${fmt(x.date)}</small>${x.sted?`<div class="pin">📍 ${esc(x.sted)}</div>`:''}</div></div>`).join('')+'</div>'}).join('');
- document.querySelectorAll('.card').forEach(c=>c.onclick=()=>detail(c.dataset.id));
-}
-function detail(id){const x=load().find(e=>e.id===id);if(!x)return;
- $('detail').innerHTML=`${x.photo?`<img src="${x.photo}" alt="">`:''}<h2>${esc(x.species)}</h2><p>Dato: <b>${fmt(x.date)}</b></p><p>📍 Sted: <b>${esc(x.sted)||'–'}</b></p><p>Notater: <b>${esc(x.notes)||'–'}</b></p>
- <button class="btn danger" id="del">Slett fangst</button><button class="btn sec" id="close" style="margin-top:8px">Lukk</button>`;
- $('m').classList.add('open');$('del').style.marginTop='14px';$('close').onclick=()=>$('m').classList.remove('open');
- $('del').onclick=()=>{if(confirm('Slette denne fangsten?')){save(load().filter(e=>e.id!==id));$('m').classList.remove('open');render()}}}
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+const nowLocal=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
+const fmt=dt=>{const[d,t]=dt.split('T');return d.split('-').reverse().join('.')+(t?' kl. '+t:'')};
+let tab='arter',yearSel=null,group='art',pending=[];
+
+function setTab(t){tab=t;$('t-arter').classList.toggle('on',t==='arter');$('t-ar').classList.toggle('on',t==='ar');t==='arter'?renderArter():renderAr()}
+$('t-arter').onclick=()=>setTab('arter');$('t-ar').onclick=()=>setTab('ar');
+
+async function renderArter(){const all=await Store.list(),c={};all.forEach(e=>c[e.species]=(c[e.species]||0)+1);
+ const known=new Set(GROUPS.flatMap(g=>g[1].map(x=>x[0])));const other=all.filter(e=>!known.has(e.species)).length;
+ $('view').innerHTML=GROUPS.map(([g,list])=>`<h2>${g}</h2><div class="tiles">`+list.map(([n,e])=>{const k=n==='Annet'?other:(c[n]||0);
+  return `<button class="tile ${k?'has':''}" data-s="${n}"><div class="e">${e}</div><b>${n}</b><small>${k?k+' fangst'+(k>1?'er':''):'Ingen ennå'}</small></button>`}).join('')+'</div>').join('');
+ document.querySelectorAll('.tile').forEach(t=>t.onclick=()=>renderSpecies(t.dataset.s));scrollTo(0,0)}
+
+async function renderSpecies(sp){const known=new Set(GROUPS.flatMap(g=>g[1].map(x=>x[0])));
+ const list=(await Store.list()).filter(e=>sp==='Annet'?!known.has(e.species):e.species===sp).sort((a,b)=>b.datetime.localeCompare(a.datetime));
+ $('view').innerHTML=`<button class="back" id="bk">‹ Alle arter</button><h2 style="margin-top:4px">${esc(sp)} <span class="cnt">${list.length}</span></h2>
+ <button class="btn" id="new">+ Ny fangst</button>`+(list.length?`<div class="grid" style="margin-top:16px">${list.map(card).join('')}</div>`:`<div class="empty">Ingen fangster av ${esc(sp.toLowerCase())} logget ennå</div>`);
+ $('bk').onclick=renderArter;$('new').onclick=()=>renderForm(sp);bindCards(()=>renderSpecies(sp));scrollTo(0,0)}
+
+function card(x){const n=x.photos.length;return `<div class="card" data-id="${x.id}">${n?`<img src="${x.photos[0]}" alt="">`:'<div class="ph"></div>'}${n>1?`<span class="nphoto">📷 ${n}</span>`:''}<div><b>${esc(x.species)}</b><small>${fmt(x.datetime)}</small>${x.sted?`<div class="pin">📍 ${esc(x.sted)}</div>`:''}</div></div>`}
+function bindCards(refresh){document.querySelectorAll('.card').forEach(c=>c.onclick=()=>detail(c.dataset.id,refresh))}
+
+function renderForm(sp){pending=[];
+ $('view').innerHTML=`<button class="back" id="bk">‹ ${esc(sp)}</button><div class="panel"><h2 style="margin-top:0">Ny fangst: ${esc(sp)}</h2><form id="f">
+ ${sp==='Annet'?'<label>Art<input id="other" placeholder="Skriv art" required></label>':''}
+ <label>Sted (valgfritt)<input id="sted" placeholder="f.eks. Trollheimen eller «ved Storvatnet»"></label>
+ <label>Dato og tid<input type="datetime-local" id="dt" required value="${nowLocal()}"></label>
+ <label>Bilder<input type="file" id="photos" accept="image/*" multiple></label><div class="thumbs" id="th"></div>
+ <label>Notater (valgfritt)<textarea id="notes" rows="3"></textarea></label>
+ <button class="btn" style="margin-top:16px">Lagre</button></form></div>`;
+ $('bk').onclick=()=>renderSpecies(sp);
+ const th=()=>{$('th').innerHTML=pending.map((p,i)=>`<div><img src="${p}" alt=""><button type="button" data-i="${i}" aria-label="Fjern">×</button></div>`).join('');
+  $('th').querySelectorAll('button').forEach(b=>b.onclick=()=>{pending.splice(+b.dataset.i,1);th()})};
+ $('photos').onchange=async e=>{for(const f of e.target.files)pending.push(await shrink(f));e.target.value='';th()};
+ $('f').onsubmit=async ev=>{ev.preventDefault();const species=sp==='Annet'?$('other').value.trim():sp;
+  try{await Store.add({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),species,datetime:$('dt').value,sted:$('sted').value.trim(),notes:$('notes').value.trim(),photos:pending})}
+  catch(err){alert('Kunne ikke lagre: lagringsplassen kan være full.');return}
+  renderSpecies(sp)};scrollTo(0,0)}
+
+function shrink(f){return new Promise(ok=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas'),s=Math.min(1,1200/Math.max(i.width,i.height));c.width=Math.round(i.width*s);c.height=Math.round(i.height*s);c.getContext('2d').drawImage(i,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.78))};i.src=r.result};r.readAsDataURL(f)})}
+
+async function detail(id,refresh){const x=(await Store.list()).find(e=>e.id===id);if(!x)return;const n=x.photos.length;
+ $('detail').innerHTML=(n?`<div class="gal" id="gal">${x.photos.map(p=>`<img src="${p}" alt="">`).join('')}</div><div class="dots" id="dots">Bilde 1 av ${n}${n>1?' · sveip for flere':''}</div>`:'')+
+ `<h2>${esc(x.species)}</h2><p>🕒 <b>${fmt(x.datetime)}</b></p><p>📍 Sted: <b>${esc(x.sted)||'–'}</b></p><p>Notater: <b>${esc(x.notes)||'–'}</b></p>
+ <button class="btn danger" id="del" style="margin-top:14px">Slett fangst</button><button class="btn sec" id="close" style="margin-top:8px">Lukk</button>`;
+ $('m').classList.add('open');if(n>1)$('gal').onscroll=e=>{const i=Math.round(e.target.scrollLeft/e.target.clientWidth)+1;$('dots').textContent=`Bilde ${i} av ${n} · sveip for flere`};
+ $('close').onclick=()=>$('m').classList.remove('open');
+ $('del').onclick=async()=>{if(confirm('Slette denne fangsten?')){await Store.delete(id);$('m').classList.remove('open');refresh()}}}
 $('m').onclick=e=>{if(e.target.id==='m')$('m').classList.remove('open')};
-$('photo').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas'),s=Math.min(1,1200/Math.max(i.width,i.height));c.width=Math.round(i.width*s);c.height=Math.round(i.height*s);c.getContext('2d').drawImage(i,0,0,c.width,c.height);photo=c.toDataURL('image/jpeg',.75);$('preview').src=photo;$('preview').style.display='block'};i.src=r.result};r.readAsDataURL(f)};
-function resetForm(){$('f').reset();photo='';$('preview').style.display='none';$('other').classList.add('hide');$('date').value=today()}
-$('f').onsubmit=ev=>{ev.preventDefault();let sp=$('species').value;if(sp==='Annet'){sp=$('other').value.trim();if(!sp){alert('Skriv inn art.');return}}
- const a=load();a.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),species:sp,date:$('date').value,sted:$('sted').value.trim(),notes:$('notes').value.trim(),photo});
- try{save(a)}catch(err){alert('Lagringsplassen i nettleseren er full. Slett noen fangster og prøv igjen.');return}
- resetForm();$('season').value=String(seasonOf(a[a.length-1].date));show('oversikt')};
-resetForm();
-{const y=seasonOf(today());$('hsub').textContent=`Sesong ${y}/${String(y+1).slice(2)} · aug–jul`}
+
+async function renderAr(){const all=await Store.list();const years=[...new Set(all.map(e=>+e.datetime.slice(0,4)))].sort((a,b)=>b-a);
+ if(!years.length){$('view').innerHTML='<div class="empty">Ingen fangster logget ennå. Velg en art under «Arter» for å legge til.</div>';return}
+ if(!years.includes(yearSel))yearSel=years[0];
+ const e=all.filter(x=>+x.datetime.slice(0,4)===yearSel).sort((a,b)=>b.datetime.localeCompare(a.datetime)),g={};
+ e.forEach(x=>{const k=group==='art'?x.species:x.datetime.slice(0,7);(g[k]=g[k]||[]).push(x)});
+ const keys=Object.keys(g).sort(group==='art'?(a,b)=>g[b].length-g[a].length||a.localeCompare(b,'no'):(a,b)=>b.localeCompare(a));
+ const title=k=>group==='art'?k:(m=>MND[+m-1][0].toUpperCase()+MND[+m-1].slice(1))(k.slice(5));
+ $('view').innerHTML=`<div class="panel"><div class="chips">${years.map(y=>`<button data-y="${y}" class="${y===yearSel?'on':''}">${y}</button>`).join('')}</div>
+ <div class="total">${e.length} <small>fangst${e.length===1?'':'er'} i ${yearSel}</small></div>
+ <div class="seg"><button id="g-art" class="${group==='art'?'on':''}">Per art</button><button id="g-mnd" class="${group==='mnd'?'on':''}">Per måned</button></div></div>`+
+ keys.map(k=>`<h2>${esc(title(k))} <span class="cnt">${g[k].length}</span></h2><div class="grid">${g[k].map(card).join('')}</div>`).join('');
+ document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>{yearSel=+b.dataset.y;renderAr()});
+ $('g-art').onclick=()=>{group='art';renderAr()};$('g-mnd').onclick=()=>{group='mnd';renderAr()};bindCards(renderAr)}
+
+Store.migrate().then(renderArter);
 </script></body></html>
