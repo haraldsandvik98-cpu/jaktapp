@@ -30,7 +30,7 @@ nav{display:flex;background:#fff;border-top:1px solid #ddd;padding-bottom:18px}n
 .seg{display:flex;gap:6px}.seg button{flex:1;border:1px solid #3f7a3f;background:#fff;color:#3f7a3f;border-radius:10px;padding:8px;cursor:pointer}.seg button.on{background:#3f7a3f;color:#fff}
 .up{background:#2f4f2f;color:#fff;border-radius:16px;padding:14px;margin-bottom:14px}.up small{opacity:.8}
 .btn{width:100%;border:0;background:#c8781e;color:#fff;font-size:15px;padding:12px;border-radius:12px;cursor:pointer;margin-top:4px}
-</style></head><body>
+#map .leaflet-control-zoom{margin-top:12px;margin-right:12px;border:0;box-shadow:0 2px 8px rgba(0,0,0,.35)}#map .leaflet-control-zoom a{width:40px;height:40px;line-height:40px;font-size:22px}</style></head><body>
 <div class="phone">
 <header><h1 id="ttl">Kart</h1><p id="sub">Jaktområder i Norge</p></header>
 <main>
@@ -51,7 +51,7 @@ nav{display:flex;background:#fff;border-top:1px solid #ddd;padding-bottom:18px}n
 <script>
 const S={elg:["Elg (ubekreftet – sjekk Lovdata)","25.09.","23.12."],hjort:["Hjort","01.09.","23.12."],radyr:["Rådyr","25.09.","23.12."],rype:["Rype","10.09.","28./29.02."],hare:["Hare","10.09.","28./29.02."]};
 const A=[["Trollheimen","Møre og Romsdal / Trøndelag",62.85,9.2,["elg","hjort","rype","hare"]],["Romsdal","Møre og Romsdal (nær Molde)",62.55,7.6,["hjort","elg","radyr","rype"]],["Hardangervidda","Vestland / Viken",60.1,7.5,["rype","hare"]],["Finnskogen","Innlandet",60.6,12.4,["elg","radyr","hare"]],["Saltfjellet","Nordland",66.7,15.4,["elg","rype","hare"]]];
-const map=L.map('map',{zoomControl:false}).setView([64.5,12],4);
+const NO=L.latLngBounds([57.9,4.5],[71.2,31.2]);const map=L.map('map',{zoomControl:false,zoomSnap:0.25,maxBounds:NO.pad(0.3),maxBoundsViscosity:1,minZoom:3,maxZoom:14,scrollWheelZoom:true,touchZoom:true});map.fitBounds(NO,{padding:[8,8]});map.setMinZoom(Math.max(3,map.getZoom()-0.5));L.control.zoom({position:'topright',zoomInTitle:'Zoom inn',zoomOutTitle:'Zoom ut'}).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
 A.forEach(a=>{L.circle([a[2],a[3]],{radius:45000,color:'#2f4f2f',fillColor:'#4f8a3f',fillOpacity:.35}).addTo(map).on('click',()=>show(a));L.marker([a[2],a[3]]).addTo(map).bindTooltip(a[0]).on('click',()=>show(a))});
 function show(a){cn.textContent=a[0];cr.textContent=a[1];cc.innerHTML=a[4].map(k=>`<span class="chip">${S[k][0]}</span>`).join('');ct.innerHTML=a[4].map(k=>`<tr><td>${S[k][0]}</td><td>${S[k][1]} – ${S[k][2]}</td></tr>`).join('');card.classList.add('on')}
@@ -62,7 +62,7 @@ const G=[["Elg (ubekreftet)",[2026,8,25],[2026,11,23],"#7a4b2a"],["Hjort",[2026,
 rows.innerHTML=G.map(g=>{const a=new Date(...g[1]),b=new Date(...g[2]);return `<div class="row"><div class="lbl">${g[0]}</div><div class="track"><div class="bar" style="left:${D(a)}%;width:${D(b)-D(a)}%;background:${g[3]}">${a.getDate()}.${a.getMonth()+1}–${b.getDate()}.${b.getMonth()+1}</div><div class="today" style="left:${D(new Date())}%"></div></div></div>`}).join('');
 list.innerHTML=Object.values(S).map(s=>`<div><b>${s[0]}</b><span>${s[1]} – ${s[2]}</span></div>`).join('')+'<div><b>Voksen rådyrbukk*</b><span>10.08. – 23.12.</span></div><div style="color:#c0392b;font-size:11px">│ rød linje = i dag</div>';
 const T={kart:["Kart","Jaktområder i Norge"],tider:["Jakttider","Generelle jakttider 2026/27"],varsler:["Varsler","Sesongvarsler"]};
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x==b));document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id=='s-'+b.dataset.s));ttl.textContent=T[b.dataset.s][0];sub.textContent=T[b.dataset.s][1];if(b.dataset.s=='kart')setTimeout(()=>map.invalidateSize(),50)});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x==b));document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id=='s-'+b.dataset.s));ttl.textContent=T[b.dataset.s][0];sub.textContent=T[b.dataset.s][1];if(b.dataset.s=='kart')setTimeout(()=>{map.invalidateSize()},50)});
 seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x==b));banner.querySelector('p').textContent=`Elgjakta starter om ${b.textContent} dager i Molde`});
 test.onclick=()=>{banner.classList.remove('on');setTimeout(()=>banner.classList.add('on'),100)};
 </script></body></html>
