@@ -163,3 +163,24 @@ language sql stable security definer set search_path = public as $$
   order by t.shared_at desc limit 50 $$;
 revoke all on function public.team_feed(timestamptz) from public, anon;
 grant execute on function public.team_feed(timestamptz) to authenticated;
+
+-- Automatisk deling: nye fangster deles til alle jaktlag eieren er medlem av (kan fjernes per fangst i appen).
+create or replace function public.auto_share_entry() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into team_entries(team_id, entry_id, shared_by)
+  select distinct x.team_id, new.id, new.user_id from (
+    select m.team_id from team_members m join auth.users u on lower(u.email) = m.email where u.id = new.user_id
+    union select t.id from teams t where t.owner = new.user_id) x
+  on conflict do nothing;
+  return new;
+end $$;
+drop trigger if exists entries_auto_share on public.entries;
+create trigger entries_auto_share after insert on public.entries for each row execute function public.auto_share_entry();
+
+-- Realtime for varsler (RLS gjelder: kun medlemmer får hendelser).
+do $$ begin
+  if exists(select 1 from pg_publication where pubname='supabase_realtime')
+     and not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='team_entries')
+  then alter publication supabase_realtime add table public.team_entries; end if;
+end $$;

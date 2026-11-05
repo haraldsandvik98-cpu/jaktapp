@@ -121,9 +121,7 @@ Alle fra Wikimedia Commons, beskåret til kvadrat og komprimert (endret).
 
 ![Kjønn/alder](docs/screenshots/21-kjonn-alder-valg.png)
 
-**Deling (kun visning):** Kjør `supabase/schema.sql` på nytt i Supabase → SQL Editor (legger til kolonnen `animal_class`, tabellen `shares` med RLS og funksjonen `shared_entries`). Logg inn → Innstillinger → «Del fangster» → «Lag delingslenke» (kopieres automatisk). «Kopier» / «Trekk tilbake» per lenke. Mottakeren åpner lenken og ser en skrivebeskyttet liste (art, kjønn/alder, dato, sted). Kartposisjon, notater og bilder deles ikke. Ingen kan skrive via lenken.
-
-![Del](docs/screenshots/22-del-fangster.png) ![Delt visning](docs/screenshots/23-delt-visning.png)
+**Deling:** skjer nå via jaktlag (se «Jaktlag» under). Delingslenke-seksjonen i Innstillinger er fjernet.
 
 **Logo:** `assets/logo.svg` (gevir + trådkors). Fugler-raden bruker fjellrype-bildet `assets/species/rype.jpg` (kreditert under Bildekreditter). Merkelapper for fremmed art/lisens/kvote/skyddsjakt er fjernet fra artsrutene.
 
@@ -143,9 +141,9 @@ Krever innlogging og at `supabase/schema.sql` kjøres på nytt (nye tabeller `te
 - **Egen fane:** «Jaktlag» i bunnmenyen (krever innlogging).
 - **Opprett:** Jaktlag-fanen → skriv navn → «Opprett». Du blir lagleder.
 - **Inviter:** åpne laget → skriv e-post → «Inviter». Det sendes ingen e-post; personen logger inn i Jaktlogg med den e-postadressen, og laget dukker opp i Jaktlag-fanen. (Ingen brukernavn/profiler – kun e-post.)
-- **Del fangster:** fangster er private. Åpne en fangst → «Del med jaktlag» → huk av laget. Kun art, type, dato, sted og hvem som skjøt deles (ikke kartposisjon, notater eller bilder). Fjern haken for å trekke tilbake.
-- **Hvem kan hva:** alle medlemmer ser lagets fangster og medlemsliste, og kan dele/fjerne *egne* fangster. Kun lagleder inviterer, fjerner medlemmer, fjerner andres delinger og sletter laget. Medlemmer kan forlate laget selv.
+- **Deling skjer automatisk:** når du er med i et jaktlag, deles hver *ny* fangst du logger med laget (art, type, dato, sted og hvem som skjøt – aldri kartposisjon, notater eller bilder). Eldre fangster fra før du ble med deles ikke. Vil du holde en fangst privat: åpne den → «Synlig i jaktlag» → fjern haken. Er du ikke med i noe lag, er alt privat.
+- **Hvem kan hva:** alle medlemmer ser lagets fangster og medlemsliste, og kan fjerne *egne* fangster fra laget. Kun lagleder inviterer, fjerner medlemmer, fjerner andres delinger og sletter laget. Medlemmer kan forlate laget selv.
 
-- **Varsler:** Innstillinger → «🔔 Varsler» (på som standard). Når et annet medlem deler en fangst i et av lagene dine, får «Jaktlag»-fanen et rødt merke og en liste «Nytt i jaktlagene» (sjekkes ved oppstart og hvert minutt mens appen er åpen; «Merk som lest» nullstiller). Krever funksjonen `team_feed` fra schema.sql. Ingen push-/e-postvarsler.
+- **Varsler:** Innstillinger → «🔔 Varsler» (på som standard, «Test lyden»). Når et annet medlem legger inn en fangst i et av lagene dine, spilles et kort rifleskudd (syntetisert med Web Audio, ingen lydfil) og «Jaktlag»-fanen får et rødt merke og listen «Nytt i jaktlagene». Sanntid via Supabase Realtime på `team_entries` (schema.sql legger tabellen i publikasjonen), ellers sjekk hvert minutt. Kun mens appen er åpen; ingen push/e-post. Nettlesere kan blokkere lyd til du har trykket i appen én gang.
 
 ![Varsler](docs/screenshots/28-varsler-innstillinger.png) ![Jaktlag-fanen](docs/screenshots/26-jaktlag-fane.png) ![Jaktlag](docs/screenshots/27-jaktlag.png)
