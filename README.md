@@ -117,7 +117,7 @@ Alle fra Wikimedia Commons, beskåret til kvadrat og komprimert (endret).
 
 ## Nytt: kjønn/alder, deling, logo
 
-**Kjønn/alder:** Etter «Lagre» i «Ny fangst» kommer et valgark for storvilt (ett trykk velger og lagrer, «Tilbake» avbryter). Vises på kort, detaljside og i År-oversikten. Elg: Okse/Ku/Kalv · Hjort/Dåhjort: Bukk/Hind/Kalv · Rådyr: Bukk/Geit/Kje · Villrein: Bukk/Simle/Kalv · Villsvin: Galt/Purke/Unge · Muflon: Vær/Søye/Lam · Bjørn: Hann/Binne/Unge · Ulv: Hann/Hunn/Valp · Jerv/Gaupe: Hann/Hunn/Unge. Sverige: Älg: Tjur/Ko/Kalv · Kronhjort/Dovhjort: Hjort/Hind/Kalv · Rådjur: Bock/Get/Kid · Vildsvin: Galt/Sugga/Kulting · Mufflonfår: Bagge/Tacka/Lamm · Björn/Lo/Järv: Hane/Hona/Unge · Varg: Hane/Hona/Valp. Alle har også Ukjent/Okänt. Småvilt/fugl får ikke valgarket.
+**Kjønn/alder:** I «Ny fangst» vises feltet «Type» rett under art-valget så snart en art med kjønn/alder er valgt (standard: Ukjent). Vises på kort, detaljside og i År-oversikten. Elg: Elgokse/Elgku/Elgkalv · Hjort/Dåhjort: Bukk/Hind/Kalv · Rådyr: Bukk/Geit/Kje · Villrein: Bukk/Simle/Kalv · Villsvin: Galt/Purke/Unge · Muflon: Vær/Søye/Lam · Bjørn: Hann/Binne/Unge · Ulv: Hann/Hunn/Valp · Jerv/Gaupe: Hann/Hunn/Unge. Sverige: Älg: Älgtjur/Älgko/Älgkalv · Kronhjort/Dovhjort: Hjort/Hind/Kalv · Rådjur: Bock/Get/Kid · Vildsvin: Galt/Sugga/Kulting · Mufflonfår: Bagge/Tacka/Lamm · Björn/Lo/Järv: Hane/Hona/Unge · Varg: Hane/Hona/Valp. Alle har også Ukjent/Okänt. Småvilt/fugl får ikke feltet.
 
 ![Kjønn/alder](docs/screenshots/21-kjonn-alder-valg.png)
 

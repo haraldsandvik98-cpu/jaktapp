@@ -64,8 +64,9 @@ input[type=file]{padding:10px}input[type=date]{color-scheme:dark}
 .brand h1{font-size:22px;font-weight:800;letter-spacing:.18em;line-height:1.1;color:#f1ead6}.brand .sub{font-size:12px;letter-spacing:.06em;color:#c9a45c;margin-top:3px}
 .sharebox{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1)}.sharebox ul{list-style:none;padding:0;margin:8px 0}.sharebox li{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0;font-size:14px;color:var(--m)}
 .fugrow .fe img{width:44px;height:44px;border-radius:10px;object-fit:cover;display:block}
+.klab{font-size:13px;color:var(--m);margin:10px 2px 4px}.kopt{display:block;margin:0}.kopt input{position:absolute;opacity:0}.kopt span{display:block;text-align:center;padding:10px 6px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);font-weight:600;cursor:pointer}.kopt input:checked+span{background:var(--a,#8fbf6a);color:#10180c;border-color:transparent}
 </style></head><body><div class="app">
-<header><div class="brand"><img src="assets/logo.svg" alt="" width="44" height="44"><div><h1>JAKTLOGG</h1><div class="sub">Samle alle dine jaktopplevelser på én plass</div></div></div><span id="hsub" hidden></span></header>
+<header><div class="brand"><img src="assets/logo.svg" alt="" width="44" height="44"><div><h1>JAKTLOGG</h1><div class="sub">Samler alle dine jaktopplevelser på én plass</div></div></div><span id="hsub" hidden></span></header>
 <main id="view"></main>
 <p class="credit"><a href="#" id="cr">Bildekreditter</a> · Bakgrunn: «River in the heart of Trollheimen mountains», Jakub Fryš, <a href="https://commons.wikimedia.org/wiki/File:River_in_the_heart_of_Trollheimen_mountains.jpg">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a></p>
 <nav class="tabs"><button id="t-arter" class="on">Arter</button><button id="t-ar">År</button><button id="t-inn">Innstillinger</button></nav>
@@ -153,9 +154,9 @@ async function renderSpecies(sp){const known=new Set(G().flatMap(g=>g[1].map(x=>
 
 // Kjønn/alder-klasser (sett-og-skutt-stil). Arter uten oppføring (småvilt/fugl m.m.) hopper over steget.
 const cleanNote=t=>(t||'').split(/\.\s*/).filter(p=>p&&!/fremmed|främmande|bilaga|introdusert|lisens|licens|kvot|skyddsjakt/i.test(p)).join('. ').trim();
-const KLASSER={Elg:['Okse','Ku','Kalv'],Hjort:['Bukk','Hind','Kalv'],Rådyr:['Bukk','Geit','Kje'],Villrein:['Bukk','Simle','Kalv'],Villsvin:['Galt','Purke','Unge'],
+const KLASSER={Elg:['Elgokse','Elgku','Elgkalv'],Hjort:['Bukk','Hind','Kalv'],Rådyr:['Bukk','Geit','Kje'],Villrein:['Bukk','Simle','Kalv'],Villsvin:['Galt','Purke','Unge'],
  Dåhjort:['Bukk','Hind','Kalv'],Muflon:['Vær','Søye','Lam'],Bjørn:['Hann','Binne','Unge'],Ulv:['Hann','Hunn','Valp'],Jerv:['Hann','Hunn','Unge'],Gaupe:['Hann','Hunn','Unge'],
- Älg:['Tjur','Ko','Kalv'],Kronhjort:['Hjort','Hind','Kalv'],Dovhjort:['Hjort','Hind','Kalv'],Rådjur:['Bock','Get','Kid'],Vildsvin:['Galt','Sugga','Kulting'],Mufflonfår:['Bagge','Tacka','Lamm'],
+ Älg:['Älgtjur','Älgko','Älgkalv'],Kronhjort:['Hjort','Hind','Kalv'],Dovhjort:['Hjort','Hind','Kalv'],Rådjur:['Bock','Get','Kid'],Vildsvin:['Galt','Sugga','Kulting'],Mufflonfår:['Bagge','Tacka','Lamm'],
  Björn:['Hane','Hona','Unge'],Varg:['Hane','Hona','Valp'],Lo:['Hane','Hona','Unge'],Järv:['Hane','Hona','Unge']};
 const ukjent=c=>c==='SE'?'Okänt':'Ukjent';
 const kl=x=>x.klasse?` · ${esc(x.klasse)}`:'';
@@ -172,7 +173,7 @@ function renderForm(sp){pending=[];let fl=land;const back=sp?()=>renderSpecies(s
  $('view').innerHTML=`<button class="back" id="bk">‹ ${sp?esc(sp):'Alle arter'}</button><div class="panel"><h2 style="margin-top:0">Ny fangst</h2><form id="f">
  <label>Land</label>${landSeg('fl',fl)}
  <label>Kategori</label><div class="seg" id="fc">${['Storvilt','Småvilt'].map(c=>`<button type="button" data-c="${c}">${c}</button>`).join('')}</div>
- <label>Art<select id="fsp" required></select></label><p id="finfo" style="font-size:13px;color:var(--m);margin:6px 2px 0"></p>
+ <label>Art<select id="fsp" required></select></label><div id="kwrap"></div><p id="finfo" style="font-size:13px;color:var(--m);margin:6px 2px 0"></p>
  <label id="otherL" style="display:none">Hvilken art?<input id="other" placeholder="Skriv art"></label>
  <label>Sted (valgfritt)<input id="sted" placeholder="f.eks. Trollheimen eller «ved Storvatnet»"></label>
  <label>Posisjon på kart (valgfritt)</label><div class="map" id="fmap"></div>
@@ -186,7 +187,7 @@ function renderForm(sp){pending=[];let fl=land;const back=sp?()=>renderSpecies(s
   const list=G(fl).find(g=>g[0]===fc)[1];const opt=x=>`<option value="${esc(x[0])}">${esc(x[0])}</option>`,fb=list.filter(x=>isBird(x[0]));
   $('fsp').innerHTML=list.filter(x=>!isBird(x[0])&&!isOther(x[0])).map(opt).join('')+(fb.length?`<optgroup label="🐦 Fugler">${fb.map(opt).join('')}</optgroup>`:'')+list.filter(x=>isOther(x[0])).map(opt).join('');
   if(keep&&list.some(x=>x[0]===keep))$('fsp').value=keep;spInfo()};
- const spInfo=()=>{const it=ITEM(fl,$('fsp').value)||[];$('otherL').style.display=isOther(it[0])?'':'none';$('other').required=isOther(it[0]);
+ const spInfo=()=>{const ko=KLASSER[$('fsp').value];$('kwrap').innerHTML=ko?`<div class="klab">Type</div><div class="kgrid" role="radiogroup">${[...ko,ukjent(fl)].map((k,i)=>`<label class="kopt"><input type="radio" name="kl" value="${esc(k)}"${i===ko.length?' checked':''}><span>${esc(k)}</span></label>`).join('')}</div>`:'';const it=ITEM(fl,$('fsp').value)||[];$('otherL').style.display=isOther(it[0])?'':'none';$('other').required=isOther(it[0]);
   $('finfo').innerHTML=(it[4]&&it[4]!=='Fremmed art'?'⚠️ Kun etter vedtak (lisens/kvote/skyddsjakt). ':'')+esc(it[3]||'')};
  document.querySelectorAll('#fl button').forEach(b=>b.onclick=()=>{const cur=$('fsp').value;fl=b.dataset.l;fillSp(cur);fm.fitBounds(LAND[fl].bounds)});
  document.querySelectorAll('#fc button').forEach(b=>b.onclick=()=>{fc=b.dataset.c;fillSp()});$('fsp').onchange=spInfo;
@@ -204,7 +205,7 @@ function renderForm(sp){pending=[];let fl=land;const back=sp?()=>renderSpecies(s
   $('th').querySelectorAll('button').forEach(b=>b.onclick=()=>{pending.splice(+b.dataset.i,1);th()})};
  $('photos').onchange=async e=>{for(const f of e.target.files)pending.push(await shrink(f));e.target.value='';th()};
  $('f').onsubmit=async ev=>{ev.preventDefault();const pick=$('fsp').value,species=isOther(pick)?$('other').value.trim():pick;if(!species)return;
-  const klasse=await pickKlasse(pick,fl);if(klasse===null)return; // Tilbake: ingenting lagres
+  const kr=document.querySelector('#kwrap input[name=kl]:checked');const klasse=kr&&KLASSER[pick]?kr.value:undefined;
   try{await Store.add({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),species,country:fl,...(klasse?{klasse}:{}),datetime:$('dt').value,sted:$('sted').value.trim(),notes:$('notes').value.trim(),photos:pending,...(ll?{lat:ll.lat,lng:ll.lng}:{})})}
   catch(err){alert('Kunne ikke lagre: '+(err&&err.message||'lagringsplassen kan være full.'));return}
   setLand(fl);renderSpecies(pick)};scrollTo(0,0)}
