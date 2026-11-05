@@ -184,3 +184,93 @@ do $$ begin
      and not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='team_entries')
   then alter publication supabase_realtime add table public.team_entries; end if;
 end $$;
+
+-- =====================================================================
+-- Venner (bygger på jaktlag-tabellene over): hver bruker har én vennegruppe (teams.name='venner').
+-- Legg til venn med brukernavn => gjensidig medlemskap i hverandres vennegruppe.
+-- Nye fangster deles automatisk via trigger-en entries_auto_share over.
+-- =====================================================================
+create table if not exists public.profiles (
+  user_id    uuid primary key default auth.uid() references auth.users(id) on delete cascade,
+  username   text not null unique check (username ~ '^[a-z0-9_.]{3,24}$'),
+  created_at timestamptz not null default now()
+);
+alter table public.profiles enable row level security;
+drop policy if exists profiles_read on public.profiles;      -- innloggede kan slå opp brukernavn (ikke e-post)
+create policy profiles_read on public.profiles for select to authenticated using (true);
+drop policy if exists profiles_own on public.profiles;
+create policy profiles_own on public.profiles for insert to authenticated with check (user_id = auth.uid());
+drop policy if exists profiles_own_upd on public.profiles;
+create policy profiles_own_upd on public.profiles for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+create or replace function public.friends_team(p_user uuid) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare t uuid; em text;
+begin
+  select id into t from teams where owner = p_user and name = 'venner' limit 1;
+  if t is null then
+    insert into teams(name, owner) values ('venner', p_user) returning id into t;
+    select lower(email) into em from auth.users where id = p_user;
+    insert into team_members(team_id, email, role) values (t, em, 'owner') on conflict do nothing;
+  end if;
+  return t;
+end $$;
+
+create or replace function public.add_friend(p_username text) returns text
+language plpgsql security definer set search_path = public as $$
+declare f uuid; fe text; me text;
+begin
+  if auth.uid() is null then raise exception 'Ikke innlogget'; end if;
+  select user_id into f from profiles where username = lower(trim(p_username));
+  if f is null then return 'ukjent'; end if;
+  if f = auth.uid() then return 'deg'; end if;
+  select lower(email) into fe from auth.users where id = f;
+  select lower(email) into me from auth.users where id = auth.uid();
+  insert into team_members(team_id, email) values (public.friends_team(auth.uid()), fe) on conflict do nothing;
+  insert into team_members(team_id, email) values (public.friends_team(f), me) on conflict do nothing;
+  return 'ok';
+end $$;
+
+create or replace function public.remove_friend(p_username text) returns void
+language plpgsql security definer set search_path = public as $$
+declare f uuid; fe text; me text;
+begin
+  select user_id into f from profiles where username = lower(trim(p_username));
+  if f is null or auth.uid() is null then return; end if;
+  select lower(email) into fe from auth.users where id = f;
+  select lower(email) into me from auth.users where id = auth.uid();
+  delete from team_members where team_id = public.friends_team(auth.uid()) and email = fe;
+  delete from team_members where team_id = public.friends_team(f) and email = me;
+  delete from team_entries te using entries e where te.entry_id = e.id and
+    ((te.team_id = public.friends_team(auth.uid()) and e.user_id = f) or (te.team_id = public.friends_team(f) and e.user_id = auth.uid()));
+end $$;
+
+create or replace function public.my_friends() returns table(username text)
+language sql stable security definer set search_path = public as $$
+  select p.username from team_members m join auth.users u on lower(u.email) = m.email join profiles p on p.user_id = u.id
+  where m.team_id = (select id from teams where owner = auth.uid() and name = 'venner' limit 1) and u.id <> auth.uid()
+  order by 1 $$;
+
+-- Vis brukernavn i stedet for e-post i fangstlister og varsler.
+create or replace function public.team_catches(p_team uuid)
+returns table(entry_id uuid, species text, country text, animal_class text, taken_at timestamptz, sted text, hunter text, mine boolean)
+language sql stable security definer set search_path = public as $$
+  select e.id, e.species, e.country, e.animal_class, e.taken_at, e.sted, coalesce(p.username, split_part(u.email::text,'@',1)), e.user_id = auth.uid()
+  from team_entries t join entries e on e.id = t.entry_id join auth.users u on u.id = e.user_id left join profiles p on p.user_id = e.user_id
+  where t.team_id = p_team and public.is_team_member(p_team)
+  order by e.taken_at desc limit 2000 $$;
+create or replace function public.team_feed(p_since timestamptz)
+returns table(team_id uuid, team_name text, species text, animal_class text, hunter text, shared_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select distinct on (t.entry_id) t.team_id, tm.name, e.species, e.animal_class, coalesce(p.username, split_part(u.email::text,'@',1)), t.shared_at
+  from team_entries t join teams tm on tm.id = t.team_id join entries e on e.id = t.entry_id join auth.users u on u.id = t.shared_by
+  left join profiles p on p.user_id = t.shared_by
+  where public.is_team_member(t.team_id) and t.shared_by <> auth.uid() and t.shared_at > p_since
+  order by t.entry_id, t.shared_at desc limit 50 $$;
+revoke all on function public.friends_team(uuid) from public, anon, authenticated;
+revoke all on function public.add_friend(text) from public, anon;
+grant execute on function public.add_friend(text) to authenticated;
+revoke all on function public.remove_friend(text) from public, anon;
+grant execute on function public.remove_friend(text) to authenticated;
+revoke all on function public.my_friends() from public, anon;
+grant execute on function public.my_friends() to authenticated;

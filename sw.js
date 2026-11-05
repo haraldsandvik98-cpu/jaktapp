@@ -1,8 +1,8 @@
 // Jaktlogg service worker: enkel app-shell-cache for offline bruk.
 // Supabase-kall (innlogging, data, bilder) og karttiles caches ikke.
-const V = 'jaktlogg-v1';
+const V = 'jaktlogg-v2';
 const SHELL = ['./', './index.html', './manifest.json', './assets/logo.svg', './assets/bg.jpg',
-  './assets/icons/icon-192.png', './assets/icons/icon-512.png'];
+  './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/sounds/seierhorn.mp3'];
 const CDN = /^https:\/\/(unpkg\.com\/leaflet@|cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@)/;
 
 self.addEventListener('install', e => {
