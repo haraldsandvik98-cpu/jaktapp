@@ -52,6 +52,8 @@ Supabase sin innebygde e-posttjeneste sender bare noen få e-poster i timen. Få
 
 Anon-nøkkelen er offentlig etter design. Det er RLS-reglene i `schema.sql` som sørger for at bare du ser dine fangster og bilder.
 
+**Slik virker «Glemt passord?»:** 1) Trykk «Glemt passord?» på innloggingen og skriv e-posten. 2) Supabase sender en lenke som går via `…supabase.co/auth/v1/verify` og tilbake til `https://haraldsandvik98-cpu.github.io/jaktapp/#…type=recovery`. 3) Appen fanger `PASSWORD_RECOVERY` (lytteren registreres før økten leses, så hendelsen ikke går tapt) og viser «Sett nytt passord» i stedet for innloggingen; token-delen fjernes fra adressen. 4) Nytt passord lagres med `updateUser`. Deretter logges recovery-økten ut, og du kommer til «Logg inn» med e-posten utfylt. Logg inn med det nye passordet. Åpne lenken i **samme nettleser** der appen er koblet til Supabase (ellers vet appen ikke hvilket prosjekt den skal bruke). Utløpt eller brukt lenke gir en norsk feilmelding og mulighet til å be om ny.
+
 ## Bildekreditter
 
 Bakgrunn (`assets/bg.jpg`): «River in the heart of Trollheimen mountains» av Jakub Fryš, [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:River_in_the_heart_of_Trollheimen_mountains.jpg), lisens [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Nedskalert og komprimert.

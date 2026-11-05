@@ -235,8 +235,13 @@ const SupabaseStore={
 let Store=LocalStore;
 async function initBackend(){const c=cfg();sb=null;sbUser=null;Store=LocalStore;if(!c)return 'local';
  try{await loadLib();sb=window.supabase.createClient(c.url,c.key,{auth:{persistSession:true,detectSessionInUrl:true}});
-  const{data}=await sb.auth.getSession();sbUser=data.session&&data.session.user;
-  sb.auth.onAuthStateChange((ev,sess)=>{const was=!!sbUser;sbUser=sess&&sess.user;Store=sbUser?SupabaseStore:LocalStore;if(ev==='PASSWORD_RECOVERY'){RECOVERY=true;setTimeout(renderRecovery,0);return}if(was!==!!sbUser&&!RECOVERY)setTab(tab)});
+  let booted=false;
+  // Lytter registreres FØR getSession, så PASSWORD_RECOVERY fra lenken ikke går tapt under oppstart.
+  sb.auth.onAuthStateChange((ev,sess)=>{const was=!!sbUser;sbUser=sess&&sess.user;Store=sbUser?SupabaseStore:LocalStore;
+   if(ev==='PASSWORD_RECOVERY'){RECOVERY=true;if(booted)setTimeout(renderRecovery,0);return}if(booted&&was!==!!sbUser&&!RECOVERY&&!IN_RECOVERY)setTab(tab)});
+  const code=new URLSearchParams(location.search).get('code');
+  if(code&&RECOVERY){try{const{error}=await sb.auth.exchangeCodeForSession(code);if(error)HASH_ERR=error}catch(e){HASH_ERR=e}}
+  const{data}=await sb.auth.getSession();sbUser=data.session&&data.session.user;booted=true;
   if(sbUser){Store=SupabaseStore;return 'server'}return 'login'}catch(e){console.warn(e);return 'local'}}
 const modeText=()=>sbUser?`Lagres privat på din server · ${esc(sbUser.email)}`:(cfg()?'Ikke innlogget · lagres kun på denne enheten':'Din private fangstlogg · lagres kun på denne enheten');
 
@@ -264,7 +269,8 @@ async function renderSettings(){const c=cfg()||{url:'',key:''};const n=(await Lo
 
 const PAGE_URL=location.origin+location.pathname.replace(/[^/]*\.html?$/i,'').replace(/\/?$/,'/'); // app-rot, f.eks. https://haraldsandvik98-cpu.github.io/jaktapp/ (ingen egen /reset-password-rute)
 let HASH_ERR=(()=>{const q=new URLSearchParams(location.hash.slice(1)+'&'+location.search.slice(1));const d=q.get('error_description')||q.get('error');if(d){history.replaceState(null,'',PAGE_URL)}return d?{message:d.replace(/\+/g,' '),code:q.get('error_code')||''}:null})();
-let RECOVERY=/type=recovery/.test(location.hash);
+let RECOVERY=/(^|[#?&])type=recovery(&|$)/.test(location.hash+location.search)||/[?&]rk=1(&|$)/.test(location.search),IN_RECOVERY=false;
+const cleanUrl=()=>{if(location.hash||location.search)history.replaceState(null,'',PAGE_URL)};
 function errNo(e){if(!e)return '';const m=((e.code||'')+' '+(e.message||e)).toLowerCase();
  if(/rate.?limit|over_email_send_rate|too many/.test(m))return 'For mange e-poster, vent en time eller bruk passord.';
  if(/invalid.?(login|credentials)|invalid_credentials/.test(m))return 'Feil e-post eller passord.';
@@ -312,14 +318,20 @@ function renderLogin(mode,msg){mode=mode||'pw';if(!msg&&HASH_ERR){msg=errNo(HASH
    else if(mode==='fg'){const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:PAGE_URL});say(error?errNo(error):'Sjekk e-posten din og trykk på lenken for å velge nytt passord.')}
    else{const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:PAGE_URL}});say(error?errNo(error):'Sjekk e-posten din og trykk på lenken for å logge inn.')}
   }finally{btn.disabled=false}};scrollTo(0,0)}
-function renderRecovery(){RECOVERY=false;tab='inn';['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn'));
- $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Velg nytt passord</h2><form id="rf">
+function renderRecovery(){RECOVERY=false;IN_RECOVERY=true;cleanUrl();tab='inn';['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn'));
+ if(!sb){$('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Sett nytt passord</h2><p class="muted" style="color:var(--m)">Lenken ble åpnet i en nettleser der appen ikke er koblet til Supabase. Åpne lenken i samme nettleser som du bruker appen i, eller legg inn Project URL og anon key under Innstillinger og be om en ny lenke.</p><button class="btn" id="rgo">Til Innstillinger</button></div>`;$('rgo').onclick=()=>{IN_RECOVERY=false;setTab('inn')};return}
+ if(!sbUser){const m=HASH_ERR?errNo(HASH_ERR):'Lenken er utløpt eller allerede brukt.';HASH_ERR=null;IN_RECOVERY=false;return renderLogin('fg',m+' Be om en ny lenke under.')}
+ $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Sett nytt passord</h2><p style="color:var(--m);font-size:14px;margin:0 0 6px">For ${esc(sbUser.email||'')}</p><form id="rf">
  <label>Nytt passord (minst 6 tegn)<input id="np" type="password" required minlength="6" autocomplete="new-password"></label>
- <label>Gjenta passord<input id="np2" type="password" required minlength="6" autocomplete="new-password"></label>
- <button class="btn" style="margin-top:14px">Lagre nytt passord</button></form>${P('rmsg')}</div>`;
+ <label>Gjenta nytt passord<input id="np2" type="password" required minlength="6" autocomplete="new-password"></label>
+ <button class="btn" id="rsave" style="margin-top:14px">Lagre nytt passord</button></form>${P('rmsg')}</div>`;
  $('rf').onsubmit=async ev=>{ev.preventDefault();const pw=$('np').value;if(pw.length<6)return $('rmsg').textContent='Passordet må ha minst 6 tegn.';if(pw!==$('np2').value)return $('rmsg').textContent='Passordene er ikke like.';
-  const{error}=await sb.auth.updateUser({password:pw});if(error)return $('rmsg').textContent=errNo(error);$('rmsg').textContent='Passordet er lagret. Du er logget inn.';setTimeout(()=>setTab('arter'),1200)};scrollTo(0,0)}
+  $('rsave').disabled=true;$('rmsg').textContent='Lagrer …';const{error}=await sb.auth.updateUser({password:pw});$('rsave').disabled=false;
+  if(error){const m=error.message||'';return $('rmsg').textContent=/same|different from the old/i.test(m)?'Det nye passordet må være forskjellig fra det gamle.':/weak|short|characters/i.test(m)?'Passordet er for svakt. Velg et lengre passord.':/expired|invalid|session|jwt|not authenticated/i.test(m)?'Lenken er utløpt. Be om en ny under «Glemt passord?».':errNo(error)}
+  // Valgt UX: logg ut recovery-økten og gå til innlogging, så brukeren bekrefter det nye passordet.
+  $('rmsg').textContent='✅ Passordet er lagret. Logg inn med det nye passordet.';const em=sbUser&&sbUser.email;
+  setTimeout(async()=>{try{await sb.auth.signOut({scope:'local'})}catch(e){}sbUser=null;Store=LocalStore;IN_RECOVERY=false;$('hsub').textContent=modeText();renderLogin('pw','✅ Passordet er lagret. Logg inn med det nye passordet.');if(em&&$('em'))$('em').value=em},1500)};scrollTo(0,0)}
 
 $('t-inn').onclick=()=>setTab('inn');$('cr').onclick=e=>{e.preventDefault();showCredits()};
-(async()=>{await LocalStore.migrate();const m=await initBackend();$('hsub').textContent=modeText();if(RECOVERY&&sbUser)return renderRecovery();if(HASH_ERR&&m!=='login'){const t=errNo(HASH_ERR);HASH_ERR=null;setTimeout(()=>alert(t),300)}m==='login'?(tab='inn',['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn')),renderLogin()):renderArter()})();
+(async()=>{await LocalStore.migrate();const m=await initBackend();$('hsub').textContent=modeText();if(RECOVERY&&m!=='local'||RECOVERY&&!cfg())return renderRecovery();if(HASH_ERR||/access_token|[?&]code=/.test(location.hash+location.search))setTimeout(cleanUrl,0);if(HASH_ERR&&m!=='login'){const t=errNo(HASH_ERR);HASH_ERR=null;setTimeout(()=>alert(t),300)}m==='login'?(tab='inn',['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn')),renderLogin()):renderArter()})();
 </script></body></html>
