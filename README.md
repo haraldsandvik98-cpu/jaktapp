@@ -135,3 +135,14 @@ Ny fane **Statistikk** i bunnmenyen (mellom «År» og «Innstillinger»), med t
 - **📅 Kalender:** månedskalender der dager med fangst er markert med artsikon. Bla med ‹ ›. Trykk på en dag for å se fangstene den dagen (trykk på et kort for detaljer).
 
 ![Statistikk](docs/screenshots/24-statistikk.png) ![Kalender](docs/screenshots/25-kalender.png)
+
+## Jaktlag
+
+Krever innlogging og at `supabase/schema.sql` kjøres på nytt (nye tabeller `teams`, `team_members`, `team_entries`, funksjonen `team_catches`, alt med RLS: bare medlemmer ser laget).
+
+- **Opprett:** Innstillinger → «👥 Jaktlag» → skriv navn → «Opprett». Du blir lagleder.
+- **Inviter:** åpne laget → skriv e-post → «Inviter». Det sendes ingen e-post; personen logger inn i Jaktlogg med den e-postadressen, og laget dukker opp under Innstillinger. (Ingen brukernavn/profiler – kun e-post.)
+- **Del fangster:** fangster er private. Åpne en fangst → «Del med jaktlag» → huk av laget. Kun art, type, dato, sted og hvem som skjøt deles (ikke kartposisjon, notater eller bilder). Fjern haken for å trekke tilbake.
+- **Hvem kan hva:** alle medlemmer ser lagets fangster og medlemsliste, og kan dele/fjerne *egne* fangster. Kun lagleder inviterer, fjerner medlemmer, fjerner andres delinger og sletter laget. Medlemmer kan forlate laget selv.
+
+![Jaktlag i Innstillinger](docs/screenshots/26-jaktlag-innstillinger.png) ![Jaktlag](docs/screenshots/27-jaktlag.png)
