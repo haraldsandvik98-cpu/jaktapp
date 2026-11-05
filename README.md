@@ -126,3 +126,12 @@ Alle fra Wikimedia Commons, beskåret til kvadrat og komprimert (endret).
 ![Del](docs/screenshots/22-del-fangster.png) ![Delt visning](docs/screenshots/23-delt-visning.png)
 
 **Logo:** `assets/logo.svg` (gevir + trådkors). Fugler-raden bruker fjellrype-bildet `assets/species/rype.jpg` (kreditert under Bildekreditter). Merkelapper for fremmed art/lisens/kvote/skyddsjakt er fjernet fra artsrutene.
+
+## Statistikk og kalender
+
+Ny fane **Statistikk** i bunnmenyen (mellom «År» og «Innstillinger»), med to visninger og landfilter (Alle land / Norge / Sverige):
+
+- **🏆 Troféoversikt:** totalt antall fangster, arter og jaktår; antall per art gruppert på Norge/Sverige med fordeling på type (kjønn/alder); filtrer på jaktår; søylediagram per jaktår. Jaktår: Norge 1. april–31. mars, Sverige 1. juli–30. juni.
+- **📅 Kalender:** månedskalender der dager med fangst er markert med artsikon. Bla med ‹ ›. Trykk på en dag for å se fangstene den dagen (trykk på et kort for detaljer).
+
+![Statistikk](docs/screenshots/24-statistikk.png) ![Kalender](docs/screenshots/25-kalender.png)

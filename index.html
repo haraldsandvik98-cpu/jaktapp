@@ -65,11 +65,14 @@ input[type=file]{padding:10px}input[type=date]{color-scheme:dark}
 .sharebox{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1)}.sharebox ul{list-style:none;padding:0;margin:8px 0}.sharebox li{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0;font-size:14px;color:var(--m)}
 .fugrow .fe img{width:44px;height:44px;border-radius:10px;object-fit:cover;display:block}
 .klab{font-size:13px;color:var(--m);margin:10px 2px 4px}.kopt{display:block;margin:0}.kopt input{position:absolute;opacity:0}.kopt span{display:block;text-align:center;padding:10px 6px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);font-weight:600;cursor:pointer}.kopt input:checked+span{background:var(--a,#8fbf6a);color:#10180c;border-color:transparent}
+.stsum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.stsum div{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}.stsum b{display:block;font-size:22px}.stsum small,.strow small{color:var(--m);font-size:12px}.strow{padding:8px 0;border-bottom:1px solid var(--line)}.strow:last-child{border:0}.sttop{display:flex;justify-content:space-between}.stbar{height:6px;background:rgba(255,255,255,.08);border-radius:4px;margin:6px 0 4px;overflow:hidden}.stbar i{display:block;height:100%;background:linear-gradient(90deg,#6f9e4f,#c9a74a);border-radius:4px}
+.calhd{display:flex;align-items:center;justify-content:space-between;margin:14px 0 4px}.calhd b{font-size:18px}.calhd button{background:rgba(255,255,255,.08);border:1px solid var(--line);color:inherit;border-radius:10px;width:40px;height:36px;font-size:20px}.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.cwd{text-align:center;font-size:11px;color:var(--m);padding:2px 0}.cday{aspect-ratio:1/1.1;background:rgba(255,255,255,.04);border:1px solid transparent;border-radius:10px;color:inherit;padding:3px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;font:inherit;font-size:13px;position:relative}.cday.has{background:rgba(143,191,106,.22);border-color:rgba(143,191,106,.55)}.cday.tod span{color:#c9a74a;font-weight:700}.cday.sel{outline:2px solid #c9a74a}.cday i{font-style:normal;font-size:12px;line-height:1.1;margin-top:2px}.cday em{font-style:normal;font-size:10px;color:var(--m)}
+.tabs button{font-size:14px}
 </style></head><body><div class="app">
 <header><div class="brand"><img src="assets/logo.svg" alt="" width="44" height="44"><div><h1>JAKTLOGG</h1><div class="sub">Samler alle dine jaktopplevelser på én plass</div></div></div><span id="hsub" hidden></span></header>
 <main id="view"></main>
 <p class="credit"><a href="#" id="cr">Bildekreditter</a> · Bakgrunn: «River in the heart of Trollheimen mountains», Jakub Fryš, <a href="https://commons.wikimedia.org/wiki/File:River_in_the_heart_of_Trollheimen_mountains.jpg">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a></p>
-<nav class="tabs"><button id="t-arter" class="on">Arter</button><button id="t-ar">År</button><button id="t-inn">Innstillinger</button></nav>
+<nav class="tabs"><button id="t-arter" class="on">Arter</button><button id="t-ar">År</button><button id="t-st">Statistikk</button><button id="t-inn">Innstillinger</button></nav>
 </div>
 <div class="modal" id="m"><div class="sheet" id="detail"></div></div>
 <script>
@@ -125,8 +128,8 @@ const NORGE=[[57.9,4.5],[71.2,31.1]];
 const icon=sp=>L.divIcon({className:'emk',html:EMO[sp]||'📍',iconSize:[34,34],iconAnchor:[17,17]});
 var SLUG,CREDITS;let tab='arter',yearSel=null,group='art',pending=[];
 
-function setTab(t){tab=t;['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x===t));$('hsub').textContent=modeText();(t==='arter'?renderArter:t==='ar'?renderAr:renderSettings)()}
-$('t-arter').onclick=()=>setTab('arter');$('t-ar').onclick=()=>setTab('ar');
+function setTab(t){tab=t;['arter','ar','st','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x===t));$('hsub').textContent=modeText();(t==='arter'?renderArter:t==='ar'?renderAr:t==='st'?renderStat:renderSettings)()}
+$('t-arter').onclick=()=>setTab('arter');$('t-ar').onclick=()=>setTab('ar');$('t-st').onclick=()=>setTab('st');
 
 const landSeg=(id,cur)=>`<div class="seg" id="${id}">${['NO','SE'].map(l=>`<button type="button" data-l="${l}" class="${cur===l?'on':''}">${LAND[l].flagg} ${LAND[l].navn}</button>`).join('')}</div>`;
 // Fugler: alle fuglearter samles i én sammenleggbar rad under Småvilt (begge land)
@@ -222,6 +225,36 @@ async function detail(id,refresh){const x=(await Store.list()).find(e=>e.id===id
  $('del').onclick=async()=>{if(confirm('Slette denne fangsten?')){await Store.delete(id);$('m').classList.remove('open');refresh()}}}
 $('m').onclick=e=>{if(e.target.id==='m')$('m').classList.remove('open')};
 
+
+// ---- Statistikk: troféoversikt + kalender ----
+// Jaktår: Norge 1. april–31. mars (SSBs jaktår), Sverige 1. juli–30. juni (svensk jaktår).
+let stView='trofe',stLand='alle',stSeason='alle',calMon=null,calDay=null;
+const jaktaar=e=>{const y=+e.datetime.slice(0,4),m=+e.datetime.slice(5,7),s=cty(e)==='SE'?7:4,a=m>=s?y:y-1;return a+'/'+String((a+1)%100).padStart(2,'0')};
+const stSeg=()=>`<div class="seg" id="sv" style="margin:0 0 10px">${[['trofe','🏆 Troféoversikt'],['kal','📅 Kalender']].map(([k,t])=>`<button data-v="${k}" class="${stView===k?'on':''}">${t}</button>`).join('')}</div><div class="seg" id="sl" style="margin:0">${[['alle','Alle land'],['NO','🇳🇴 Norge'],['SE','🇸🇪 Sverige']].map(([k,t])=>`<button data-l="${k}" class="${stLand===k?'on':''}">${t}</button>`).join('')}</div>`;
+function bindSt(){document.querySelectorAll('#sv button').forEach(b=>b.onclick=()=>{stView=b.dataset.v;renderStat()});document.querySelectorAll('#sl button').forEach(b=>b.onclick=()=>{stLand=b.dataset.l;stSeason='alle';calDay=null;renderStat()})}
+async function renderStat(){const all=(await Store.list()).filter(x=>stLand==='alle'||cty(x)===stLand);(stView==='kal'?renderKal:renderTrofe)(all)}
+function renderTrofe(all){const seasons=[...new Set(all.map(jaktaar))].sort().reverse();if(!seasons.includes(stSeason))stSeason='alle';
+ const e=stSeason==='alle'?all:all.filter(x=>jaktaar(x)===stSeason);
+ const byC={};e.forEach(x=>{const c=cty(x),s=x.species;byC[c]=byC[c]||{};const o=byC[c][s]=byC[c][s]||{n:0,k:{}};o.n++;if(x.klasse)o.k[x.klasse]=(o.k[x.klasse]||0)+1});
+ const sec=c=>{const sp=Object.entries(byC[c]||{}).sort((a,b)=>b[1].n-a[1].n||a[0].localeCompare(b[0],'no'));if(!sp.length)return'';const tot=sp.reduce((a,b)=>a+b[1].n,0),mx=sp[0][1].n;
+  return `<h2>${LAND[c].flagg} ${LAND[c].navn} <span class="cnt">${tot}</span></h2><div class="panel">${sp.map(([s,o])=>`<div class="strow"><div class="sttop"><b>${esc(s)}</b><span>${o.n}</span></div><div class="stbar"><i style="width:${Math.max(6,o.n/mx*100)}%"></i></div>${Object.keys(o.k).length?`<small>${Object.entries(o.k).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${esc(k)} ${n}`).join(' · ')}</small>`:''}</div>`).join('')}</div>`};
+ const perS=seasons.map(s=>[s,all.filter(x=>jaktaar(x)===s).length]),smx=Math.max(1,...perS.map(x=>x[1]));
+ $('view').innerHTML=`<div class="panel">${stSeg()}<div class="chips" style="margin-top:10px"><button data-s="alle" class="${stSeason==='alle'?'on':''}">Alle jaktår</button>${seasons.map(s=>`<button data-s="${s}" class="${s===stSeason?'on':''}">${s}</button>`).join('')}</div>
+  <div class="stsum"><div><b>${e.length}</b><small>fangster</small></div><div><b>${new Set(e.map(x=>x.species)).size}</b><small>arter</small></div><div><b>${seasons.length}</b><small>jaktår</small></div></div></div>`+
+  (e.length?(['NO','SE'].map(sec).join('')+(stSeason==='alle'&&perS.length>1?`<h2>Per jaktår</h2><div class="panel">${perS.map(([s,n])=>`<div class="strow"><div class="sttop"><b>${s}</b><span>${n}</span></div><div class="stbar"><i style="width:${Math.max(6,n/smx*100)}%"></i></div></div>`).join('')}</div>`:'')):'<div class="empty">Ingen fangster ennå.</div>')+
+  `<p style="color:var(--m);font-size:12px;margin:8px 4px 90px">Jaktår: Norge 1. april–31. mars, Sverige 1. juli–30. juni.</p>`;
+ bindSt();document.querySelectorAll('.chips button[data-s]').forEach(b=>b.onclick=()=>{stSeason=b.dataset.s;renderStat()})}
+function renderKal(all){const days={};all.forEach(x=>{const d=x.datetime.slice(0,10);(days[d]=days[d]||[]).push(x)});
+ if(!calMon){const l=all.map(x=>x.datetime.slice(0,7)).sort().pop();calMon=l||new Date().toISOString().slice(0,7)}
+ const[y,m]=calMon.split('-').map(Number),first=(new Date(y,m-1,1).getDay()+6)%7,nd=new Date(y,m,0).getDate(),today=new Date().toISOString().slice(0,10);
+ const mc=all.filter(x=>x.datetime.slice(0,7)===calMon).length;let cells='';for(let i=0;i<first;i++)cells+='<div></div>';
+ for(let d=1;d<=nd;d++){const k=`${calMon}-${String(d).padStart(2,'0')}`,l=days[k]||[];cells+=`<button class="cday${l.length?' has':''}${k===calDay?' sel':''}${k===today?' tod':''}" data-d="${k}"><span>${d}</span>${l.length?`<i>${l.slice(0,3).map(x=>EMO[x.species]||'🎯').join('')}</i>${l.length>3?`<em>+${l.length-3}</em>`:''}`:''}</button>`}
+ const sel=calDay&&days[calDay]?days[calDay].sort((a,b)=>a.datetime.localeCompare(b.datetime)):[];
+ $('view').innerHTML=`<div class="panel">${stSeg()}<div class="calhd"><button id="cp" aria-label="Forrige måned">‹</button><b>${MND[m-1][0].toUpperCase()+MND[m-1].slice(1)} ${y}</b><button id="cn" aria-label="Neste måned">›</button></div><p style="text-align:center;color:var(--m);font-size:13px;margin:0 0 8px">${mc} fangst${mc===1?'':'er'} denne måneden</p>
+  <div class="cal">${['Ma','Ti','On','To','Fr','Lø','Sø'].map(d=>`<div class="cwd">${d}</div>`).join('')}${cells}</div></div>`+
+  (calDay?`<h2>${+calDay.slice(8)}. ${MND[m-1]} ${y} <span class="cnt">${sel.length}</span></h2>${sel.length?`<div class="grid">${sel.map(card).join('')}</div>`:'<div class="empty">Ingen fangster denne dagen.</div>'}`:'<p style="color:var(--m);text-align:center;font-size:13px">Trykk på en dag for å se fangstene.</p>')+'<div style="height:90px"></div>';
+ bindSt();const mv=n=>{const d=new Date(y,m-1+n,1);calMon=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');calDay=null;renderStat()};$('cp').onclick=()=>mv(-1);$('cn').onclick=()=>mv(1);
+ document.querySelectorAll('.cday').forEach(b=>b.onclick=()=>{calDay=calDay===b.dataset.d?null:b.dataset.d;renderStat()});bindCards(renderStat)}
 async function renderAr(){const all=(await Store.list()).filter(x=>arLand==='alle'||cty(x)===arLand);const years=[...new Set(all.map(e=>+e.datetime.slice(0,4)))].sort((a,b)=>b-a);
  if(!years.length){$('view').innerHTML=(arLand!=='alle'?`<div class="panel"><div class="seg" id="al" style="margin:0">${[['alle','Alle land'],['NO','🇳🇴 Norge'],['SE','🇸🇪 Sverige']].map(([k,t])=>`<button data-a="${k}" class="${arLand===k?'on':''}">${t}</button>`).join('')}</div></div>`:'')+'<div class="empty">Ingen fangster logget ennå. Velg en art under «Arter» for å legge til.</div>';document.querySelectorAll('#al button').forEach(b=>b.onclick=()=>{arLand=b.dataset.a;renderAr()});return}
  if(!years.includes(yearSel))yearSel=years[0];
@@ -377,7 +410,7 @@ function renderLogin(mode,msg){mode=mode||'pw';if(!msg&&HASH_ERR){msg=errNo(HASH
    else if(mode==='fg'){const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:PAGE_URL});say(error?errNo(error):'Sjekk e-posten din og trykk på lenken for å velge nytt passord.')}
    else{const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:PAGE_URL}});say(error?errNo(error):'Sjekk e-posten din og trykk på lenken for å logge inn.')}
   }finally{btn.disabled=false}};scrollTo(0,0)}
-function renderRecovery(){RECOVERY=false;IN_RECOVERY=true;if(sb)cleanUrl();tab='inn';['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn'));
+function renderRecovery(){RECOVERY=false;IN_RECOVERY=true;if(sb)cleanUrl();tab='inn';['arter','ar','st','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn'));
  if(!sb){$('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Sett nytt passord</h2><p class="muted" style="color:var(--m)">Lenken ble åpnet i en nettleser der appen ikke er koblet til Supabase. Åpne lenken i samme nettleser som du bruker appen i (ikke e-post-appens innebygde nettleser).</p><button class="btn" id="rgo">Til appen</button></div>`;$('rgo').onclick=()=>{IN_RECOVERY=false;setTab('inn')};return}
  if(!sbUser){const m=HASH_ERR?errNo(HASH_ERR):'Lenken er utløpt eller allerede brukt.';HASH_ERR=null;IN_RECOVERY=false;return renderLogin('fg',m+' Be om en ny lenke under.')}
  $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Sett nytt passord</h2><p style="color:var(--m);font-size:14px;margin:0 0 6px">For ${esc(sbUser.email||'')}</p><form id="rf">
@@ -392,5 +425,5 @@ function renderRecovery(){RECOVERY=false;IN_RECOVERY=true;if(sb)cleanUrl();tab='
   setTimeout(async()=>{try{await sb.auth.signOut({scope:'local'})}catch(e){}sbUser=null;Store=LocalStore;IN_RECOVERY=false;$('hsub').textContent=modeText();renderLogin('pw','✅ Passordet er lagret. Logg inn med det nye passordet.');if(em&&$('em'))$('em').value=em},1500)};scrollTo(0,0)}
 
 $('t-inn').onclick=()=>setTab('inn');$('cr').onclick=e=>{e.preventDefault();showCredits()};
-(async()=>{if(SHARE)return renderShared();await LocalStore.migrate();const m=await initBackend();$('hsub').textContent=modeText();if(RECOVERY&&m!=='local'||RECOVERY&&!cfg())return renderRecovery();if(HASH_ERR||/access_token|[?&]code=/.test(location.hash+location.search))setTimeout(cleanUrl,0);if(HASH_ERR&&m!=='login'){const t=errNo(HASH_ERR);HASH_ERR=null;setTimeout(()=>alert(t),300)}SETUP?setTab('inn'):m==='login'?(tab='inn',['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn')),renderLogin()):renderArter()})();
+(async()=>{if(SHARE)return renderShared();await LocalStore.migrate();const m=await initBackend();$('hsub').textContent=modeText();if(RECOVERY&&m!=='local'||RECOVERY&&!cfg())return renderRecovery();if(HASH_ERR||/access_token|[?&]code=/.test(location.hash+location.search))setTimeout(cleanUrl,0);if(HASH_ERR&&m!=='login'){const t=errNo(HASH_ERR);HASH_ERR=null;setTimeout(()=>alert(t),300)}SETUP?setTab('inn'):m==='login'?(tab='inn',['arter','ar','st','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn')),renderLogin()):renderArter()})();
 </script></body></html>
