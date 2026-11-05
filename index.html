@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0f1a12"><link rel="apple-touch-icon" href="assets/icons/icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Jaktlogg">
+<title>Jaktlogg</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--g:#7fb069;--gd:#4f7f3a;--t:#eef3ea;--m:#b7c4b0;--card:rgba(20,28,22,.62);--line:rgba(255,255,255,.12)}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,"Helvetica Neue",Arial,sans-serif;color:var(--t);line-height:1.4;
+background:linear-gradient(180deg,rgba(8,14,10,.55),rgba(8,14,10,.88) 55%,rgba(8,14,10,.96)),url(assets/bg.jpg) center/cover fixed #121a14;min-height:100vh}
+.app{max-width:390px;margin:0 auto;min-height:100vh;padding:0 16px 96px}
+header{position:sticky;top:0;z-index:5;margin:0 -16px;padding:18px 16px 14px;background:linear-gradient(180deg,rgba(8,14,10,.85),rgba(8,14,10,0));backdrop-filter:blur(6px)}
+h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.sub{color:var(--m);font-size:14px;margin-top:2px}
+h2{font-size:17px;font-weight:700;margin:22px 0 10px;display:flex;justify-content:space-between;align-items:center}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.btn{display:block;width:100%;padding:14px;border:0;border-radius:14px;background:linear-gradient(180deg,var(--g),var(--gd));color:#0d160e;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(79,127,58,.4)}
+.danger{background:#c0483f;color:#fff;box-shadow:none}.sec{background:rgba(255,255,255,.14);color:var(--t);box-shadow:none}
+label{display:block;font-size:13px;font-weight:600;color:var(--m);margin-top:14px;text-transform:uppercase;letter-spacing:.04em}
+input,select,textarea{width:100%;padding:12px;font-size:16px;color:var(--t);background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:12px;margin-top:6px;font-family:inherit;text-transform:none;letter-spacing:0}
+input::placeholder,textarea::placeholder{color:#8b998a}select option{color:#000}input:focus,select,textarea:focus{outline-color:var(--g)}
+input[type=file]{padding:10px}input[type=date]{color-scheme:dark}
+#preview{width:100%;max-height:220px;object-fit:cover;border-radius:12px;display:none;margin-top:10px}
+.empty{text-align:center;color:var(--m);padding:40px 16px;border:1.5px dashed rgba(255,255,255,.25);border-radius:18px;margin:18px 0;background:var(--card);backdrop-filter:blur(10px)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);cursor:pointer;backdrop-filter:blur(12px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.card img,.ph{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#2a3a2c}
+.card div{padding:8px 10px 10px;font-size:14px}.card small{color:var(--m);display:block}.card .pin{padding:2px 0 0;font-size:12px;color:var(--g);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cnt{background:var(--g);color:#0d160e;border-radius:999px;padding:1px 10px;font-size:13px;font-weight:700}
+.seg{display:flex;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:12px;padding:3px;margin-top:12px}
+.lk a{color:#bfe3a4}.seg button{flex:1;border:0;background:none;color:var(--m);padding:9px;border-radius:9px;font-size:14px;font-family:inherit}.seg .on{background:rgba(255,255,255,.92);color:#13200f;font-weight:700}
+.tabs{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:366px;display:flex;gap:4px;padding:5px;background:rgba(14,20,15,.82);border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(16px);box-shadow:0 8px 30px rgba(0,0,0,.45);z-index:6}
+.tabs button{flex:1;border:0;background:none;padding:11px;font-size:15px;color:var(--m);border-radius:13px;font-family:inherit}.tabs .on{color:#0d160e;background:var(--g);font-weight:700}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:9}.modal.open{display:flex}
+.sheet{background:#18221a;color:var(--t);width:100%;max-width:390px;border-radius:22px 22px 0 0;padding:18px;max-height:90vh;overflow:auto;border-top:1px solid var(--line)}.sheet img{width:100%;border-radius:14px}
+.sheet p{margin:6px 0;color:var(--m)}.sheet p b{color:var(--t)}
+.hide{display:none}.credit{text-align:center;font-size:11px;color:#8b998a;margin:24px 0 0}.credit a{color:#a9bba4}
+.tiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 8px;text-align:center;cursor:pointer;backdrop-filter:blur(12px);color:var(--t);font:inherit}
+.tile .e{font-size:26px}.tile b{display:block;font-size:14px;margin-top:4px}.tile small{color:var(--m);font-size:12px}.tile.has small{color:var(--g);font-weight:700}
+.back{background:none;border:0;color:var(--g);font:inherit;font-size:15px;padding:0;cursor:pointer;margin-bottom:6px}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.thumbs div{position:relative;width:76px;height:76px}.thumbs img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+.thumbs button{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;border:0;background:#c0483f;color:#fff;font-weight:700;cursor:pointer;line-height:1}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0}.chips button{border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--t);border-radius:999px;padding:8px 16px;font:inherit;font-size:15px;cursor:pointer}.chips .on{background:var(--g);color:#0d160e;font-weight:700}
+.total{font-size:34px;font-weight:800;margin:12px 0 0}.total small{font-size:14px;color:var(--m);font-weight:500}
+.nphoto{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);color:#fff;font-size:12px;border-radius:999px;padding:2px 8px}.card{position:relative}
+.gal{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;border-radius:14px}.gal img{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:4/3;object-fit:cover;border-radius:14px}
+.dots{text-align:center;color:var(--m);font-size:13px;margin-top:6px}
+.map{height:220px;border-radius:12px;margin-top:8px;border:1px solid var(--line);z-index:0}.map.big{height:460px;margin-top:16px}
+.maprow{display:flex;gap:8px;margin-top:8px;align-items:center}.maprow .btn{width:auto;padding:9px 12px;font-size:14px}.maprow small{color:var(--m);font-size:12px;flex:1}
+.emk{font-size:22px;line-height:30px;text-align:center;background:rgba(14,20,15,.85);border:2px solid var(--g);border-radius:50%;width:34px!important;height:34px!important}
+.leaflet-popup-content{margin:8px;color:#111}.leaflet-popup-content img{width:150px;border-radius:8px;display:block;margin-bottom:4px}
+.tile{position:relative}.tag{position:absolute;top:6px;right:6px;color:#fff;font-style:normal;font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;letter-spacing:.02em}.tile .no{display:block;font-size:11px;color:#cfd8cb;font-weight:400}.landrow{display:flex;gap:8px;align-items:center;margin:4px 0 2px}.landrow .seg{flex:1;margin:0}.src{font-size:12px;color:var(--m);margin:8px 2px 0}.src a{color:#bfe3a4}.lic{background:rgba(176,84,44,.18);border:1px solid rgba(176,84,44,.5);border-radius:12px;padding:8px 10px;font-size:13px;margin:8px 0}
+.tile.pic{aspect-ratio:1;background-size:cover;background-position:center;display:flex;flex-direction:column;justify-content:flex-end;padding:8px;text-align:left}
+.tile.pic b{margin:0;text-shadow:0 1px 3px #000}.tile.pic small{text-shadow:0 1px 3px #000;color:#d6dfd2}.tile.has.pic small{color:#a6e08a}
+.tile:not(.pic){aspect-ratio:1;display:flex;flex-direction:column;justify-content:center}.tabs button{font-size:14px;padding:11px 6px}
+.fugrow{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 10px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(20,28,22,.72);color:inherit;font:inherit;text-align:left;cursor:pointer;backdrop-filter:blur(6px)}
+.fugrow.has{border-color:rgba(143,191,106,.6)}.fugrow .fe{font-size:26px}.fugrow .ft{flex:1;display:flex;flex-direction:column}.fugrow small{color:var(--m);font-size:13px}.fugrow .chev{font-size:20px;color:var(--m)}
+.fugrow.open{border-bottom-left-radius:6px;border-bottom-right-radius:6px}.fugtiles{margin:-4px 0 14px;padding:10px;border-radius:0 0 16px 16px;background:rgba(20,28,22,.45);border:1px solid rgba(255,255,255,.1);border-top:0}
+.sheetbg{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:520px;background:#16201a;border:1px solid rgba(255,255,255,.14);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kgrid .btn{margin:0;padding:16px 8px;font-size:17px}.card small.kl{color:#bfe3a4;font-weight:600}
+.brand{display:flex;align-items:center;gap:12px}.brand img{width:44px;height:44px;flex:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.brand h1{font-size:22px;font-weight:800;letter-spacing:.18em;line-height:1.1;color:#f1ead6}.brand .sub{font-size:12px;letter-spacing:.06em;color:#c9a45c;margin-top:3px}
+.sharebox{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1)}.sharebox ul{list-style:none;padding:0;margin:8px 0}.sharebox li{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0;font-size:14px;color:var(--m)}
+.fugrow .fe img{width:44px;height:44px;border-radius:10px;object-fit:cover;display:block}
+.klab{font-size:13px;color:var(--m);margin:10px 2px 4px}.kopt{display:block;margin:0}.kopt input{position:absolute;opacity:0}.kopt span{display:block;text-align:center;padding:10px 6px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);font-weight:600;cursor:pointer}.kopt input:checked+span{background:var(--a,#8fbf6a);color:#10180c;border-color:transparent}
+.stsum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.stsum div{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}.stsum b{display:block;font-size:22px}.stsum small,.strow small{color:var(--m);font-size:12px}.strow{padding:8px 0;border-bottom:1px solid var(--line)}.strow:last-child{border:0}.sttop{display:flex;justify-content:space-between}.stbar{height:6px;background:rgba(255,255,255,.08);border-radius:4px;margin:6px 0 4px;overflow:hidden}.stbar i{display:block;height:100%;background:linear-gradient(90deg,#6f9e4f,#c9a74a);border-radius:4px}
+.calhd{display:flex;align-items:center;justify-content:space-between;margin:14px 0 4px}.calhd b{font-size:18px}.calhd button{background:rgba(255,255,255,.08);border:1px solid var(--line);color:inherit;border-radius:10px;width:40px;height:36px;font-size:20px}.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.cwd{text-align:center;font-size:11px;color:var(--m);padding:2px 0}.cday{aspect-ratio:1/1.1;background:rgba(255,255,255,.04);border:1px solid transparent;border-radius:10px;color:inherit;padding:3px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;font:inherit;font-size:13px;position:relative}.cday.has{background:rgba(143,191,106,.22);border-color:rgba(143,191,106,.55)}.cday.tod span{color:#c9a74a;font-weight:700}.cday.sel{outline:2px solid #c9a74a}.cday i{font-style:normal;font-size:12px;line-height:1.1;margin-top:2px}.cday em{font-style:normal;font-size:10px;color:var(--m)}
+.tabs button{font-size:14px}
+#t-lag{position:relative}#nbadge{position:absolute;top:2px;right:4px;background:#d9534f;color:#fff;font-style:normal;font-size:10px;font-weight:700;border-radius:9px;min-width:16px;height:16px;line-height:16px;padding:0 4px}.notif{border-color:rgba(201,167,74,.6)}
+.tabs button{font-size:12.5px;padding-left:2px;padding-right:2px}
+</style></head><body><div class="app">
+<header><div class="brand"><img src="assets/logo.svg" alt="" width="44" height="44"><div><h1>JAKTLOGG</h1><div class="sub">Samler alle dine jaktopplevelser på én plass</div></div></div><span id="hsub" hidden></span></header>
+<main id="view"></main>
+<p class="credit"><a href="#" id="cr">Bildekreditter</a> · Bakgrunn: «River in the heart of Trollheimen mountains», Jakub Fryš, <a href="https://commons.wikimedia.org/wiki/File:River_in_the_heart_of_Trollheimen_mountains.jpg">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a></p>
+<nav class="tabs"><button id="t-arter" class="on">Arter</button><button id="t-ar">År</button><button id="t-st">Statistikk</button><button id="t-lag">Venner<i id="nbadge" hidden></i></button><button id="t-inn">Innstillinger</button></nav>
+</div>
+<div class="modal" id="m"><div class="sheet" id="detail"></div></div>
+<script>
+/* ---------- Lagring: privat, på enheten (IndexedDB) ---------- */
+const LocalStore={_db:null,
+ open(){return this._db||(this._db=new Promise((ok,err)=>{const r=indexedDB.open('jaktlogg',1);r.onupgradeneeded=()=>r.result.createObjectStore('entries',{keyPath:'id'});r.onsuccess=()=>ok(r.result);r.onerror=()=>err(r.error)}))},
+ async _tx(mode,fn){const db=await this.open();return new Promise((ok,err)=>{const t=db.transaction('entries',mode),s=t.objectStore('entries'),r=fn(s);t.oncomplete=()=>ok(r&&r.result);t.onerror=()=>err(t.error)})},
+ list(){return this._tx('readonly',s=>s.getAll()).then(a=>a||[])},
+ add(e){return this._tx('readwrite',s=>s.put(e))},
+ delete(id){return this._tx('readwrite',s=>s.delete(id))},
+ async migrate(){const raw=localStorage.getItem('jaktlogg.entries');if(!raw)return;
+  for(const e of JSON.parse(raw)){await this.add({id:e.id,species:e.species,datetime:e.datetime||e.date+'T12:00',sted:e.sted??e.area??'',notes:e.notes||'',photos:e.photos||(e.photo?[e.photo]:[]),...(e.country?{country:e.country}:{}),...(e.klasse?{klasse:e.klasse}:{}),...(e.lat!=null?{lat:e.lat,lng:e.lng}:{})})}
+  localStorage.removeItem('jaktlogg.entries')}};
+
+/* Arter med jakttid i FOR-2022-01-21-128 (Lovdata) */
+// Artslister. Norge: jakttidsforskriften FOR-2022-01-21-128 § 2 (sist endret 01.07.2026) + rovviltforskriften (lisens/kvote).
+// Sverige: Jaktförordningen (1987:905) bilaga 1 (allmänna jakttider), bilaga 2 (älg), bilaga 3 (kronhjort), bilaga 4 p. 1 (främmande arter), licensjakt 23 c §.
+// Element: [navn, emoji, bilde-slug|'', innhold/merknad, merke ('Lisens'|'Kvote'|'Skyddsjakt'|'Fremmed art'|'')]
+const LAND={
+ NO:{navn:'Norge',flagg:'🇳🇴',kilde:'https://lovdata.no/dokument/SF/forskrift/2022-01-21-128',kildeTxt:'Jakttidsforskriften (Lovdata)',bounds:[[57.9,4.5],[71.2,31.1]],groups:[
+ ['Storvilt',[['Elg','🫎','elg','Der lokal forskrift åpner for elgjakt',''],['Hjort','🦌','hjort','Der lokal forskrift åpner for hjortejakt',''],['Rådyr','🦌','radyr','Der lokal forskrift åpner for rådyrjakt',''],['Rådyrbukk','🦌','radyrbukk','Voksen rådyrbukk',''],['Villrein','🦌','villrein','Alle villreinområder',''],['Villsvin','🐗','villsvin','Sugge med diende unger er fredet','Fremmed art'],['Dåhjort','🦌','dahjort','Fremmed/introdusert art','Fremmed art'],['Muflon','🐏','muflon','Fremmed/introdusert art','Fremmed art'],
+  ['Bjørn','🐻','bjorn','Lisensfelling etter rovviltforskriften, kun der kvote er vedtatt','Lisens'],['Ulv','🐺','ulv','Lisensfelling etter rovviltforskriften, kun der kvote er vedtatt','Lisens'],['Jerv','🐾','jerv','Lisensfelling etter rovviltforskriften, kun der kvote er vedtatt','Lisens'],['Gaupe','🐈','gaupe','Kvotejakt, kun der rovviltnemnda/Miljødirektoratet har fastsatt kvote','Kvote']]],
+ ['Småvilt',[['Rype','🐦','rype','Lirype og fjellrype',''],['Storfugl','🐦','storfugl','',''],['Orrfugl','🐦','orrfugl','',''],['Jerpe','🐦','jerpe','',''],['Fasan','🐓','fasan','','Fremmed art'],['Hare','🐇','hare','',''],['Sørhare og kanin','🐇','sorhare','Sørhare og viltlevende kanin','Fremmed art'],['Ekorn','🐿️','ekorn','',''],['Bever','🦫','bever','Der lokal forskrift åpner for beverjakt',''],
+  ['Rev','🦊','rev','Rødrev',''],['Grevling','🦡','grevling','',''],['Mår','🐾','mar','',''],['Røyskatt','🐾','royskatt','',''],['Mink','🐾','mink','Villmink','Fremmed art'],['Mårhund','🐾','marhund','','Fremmed art'],['Vaskebjørn','🦝','vaskebjorn','','Fremmed art'],['Bisam','🐀','bisam','Bisamrotte','Fremmed art'],
+  ['Ender','🦆','ender','Stokkand, krikkand, brunnakke, toppand, kvinand, siland, laksand, svartand (kun Østfold)',''],['Fremmede ender','🦆','','Knoppand (moskusand), mandarinand, stivhaleand','Fremmed art'],['Ærfugl','🦆','aerfugl','Kun hannfugl, kun enkelte fylker',''],['Gjess','🪿','gjess','Grågås, kortnebbgås, kanadagås, stripegås',''],['Skarv','🐦‍⬛','skarv','Toppskarv og storskarv (regionale regler)',''],
+  ['Ringdue','🕊️','ringdue','Fredet i Finnmark og Troms',''],['Rugde','🐦','rugde','',''],['Enkeltbekkasin','🐦','enkeltbekkasin','',''],['Gråtrost','🐦','graatrost','',''],['Kråkefugler','🐦‍⬛','kraakefugler','Kråke, skjære, ravn, nøtteskrike',''],['Annet','➕','','','']]]]},
+ SE:{navn:'Sverige',flagg:'🇸🇪',kilde:'https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/jaktforordning-1987905_sfs-1987-905/',kildeTxt:'Jaktförordningen 1987:905 (Riksdagen)',bounds:[[55.3,10.9],[69.1,24.2]],groups:[
+ ['Storvilt',[['Älg','🫎','elg','Elg. Jakttid etter bilaga 2 / länsstyrelsen',''],['Kronhjort','🦌','hjort','Hjort. Bilaga 1 og 3',''],['Dovhjort','🦌','dahjort','Dåhjort',''],['Rådjur','🦌','radyr','Rådyr',''],['Vildsvin','🐗','villsvin','Villsvin',''],['Mufflonfår','🐏','muflon','Muflon. Främmande art, bilaga 4 p. 1','Fremmed art'],['Främmande hjortdjur','🦌','','Sikahjort, vitsvanshjort, axishjort, wapitihjort, röd muntjak. Bilaga 4 p. 1','Fremmed art'],
+  ['Björn','🐻','bjorn','Bjørn. Licensjakt etter beslut av länsstyrelsen','Lisens'],['Varg','🐺','ulv','Ulv. Licensjakt etter beslut av länsstyrelsen','Lisens'],['Lo','🐈','gaupe','Gaupe. Licensjakt etter beslut av länsstyrelsen','Lisens'],['Järv','🐾','jerv','Jerv. Kun skyddsjakt etter vedtak','Skyddsjakt'],['Säl','🦭','sel','Sel. Gråsäl (licensjakt), knubbsäl og vikare (skyddsjakt) etter beslut','Lisens']]],
+ ['Småvilt',[['Ripa','🐦','rype','Rype: dalripa (lirype) og fjällripa',''],['Tjäder','🐦','storfugl','Storfugl',''],['Orre','🐦','orrfugl','Orrfugl',''],['Järpe','🐦','jerpe','Jerpe',''],['Rapphöna','🐦','rapphone','Rapphøne',''],['Fasan','🐓','fasan','',''],['Skogshare','🐇','hare','Hare',''],['Fälthare','🐇','sorhare','Sørhare',''],['Vildkanin','🐇','kanin','Kanin. Främmande art, bilaga 4 p. 1','Fremmed art'],['Bäver','🦫','bever','Bever',''],
+  ['Rödräv','🦊','rev','Rødrev',''],['Grävling','🦡','grevling','Grevling',''],['Skogsmård','🐾','mar','Mår',''],['Iller','🐾','iller','',''],['Mink','🐾','mink','Främmande art, bilaga 4 p. 1','Fremmed art'],['Mårdhund','🐾','marhund','Mårhund. Främmande art, bilaga 4 p. 1','Fremmed art'],['Tvättbjörn','🦝','vaskebjorn','Vaskebjørn. Främmande art, bilaga 4 p. 1','Fremmed art'],['Bisam','🐀','bisam','Främmande art, bilaga 4 p. 1','Fremmed art'],
+  ['Änder','🦆','ender','Ender: gräsand (stokkand), kricka (krikkand), bläsand (brunnakke), knipa (kvinand), storskrake (laksand), sjöorre (svartand), vigg (toppand)',''],['Gäss','🪿','gjess','Gjess: grågås, kanadagås, bläsgås (kun Skåne)',''],['Morkulla','🐦','rugde','Rugde',''],['Ringduva','🕊️','ringdue','Ringdue',''],['Nötskrika','🐦','notskrike','Nøtteskrike',''],['Kråkfåglar','🐦‍⬛','kraakefugler','Kråkefugler: kaja, kråka, skata, råka (kun Skåne og Halland)',''],['Måsar','🐦','maker','Måker: fiskmås, gråtrut',''],['Annat','➕','','','']]]]}};
+let land=localStorage.getItem('jaktlogg.land')==='SE'?'SE':'NO',arLand='alle';
+const cty=e=>e.country==='SE'?'SE':'NO';
+const GROUPS=LAND.NO.groups;const G=l=>LAND[l||land].groups;
+const ITEM=(l,n)=>G(l).flatMap(g=>g[1]).find(x=>x[0]===n);
+const isOther=n=>n==='Annet'||n==='Annat';
+const setLand=l=>{land=l;localStorage.setItem('jaktlogg.land',l)};
+const TAGC={'Lisens':'#b0542c','Kvote':'#b0542c','Skyddsjakt':'#8a4a9e','Fremmed art':'#4f6b80'};
+const tagI=t=>t?`<i class="tag" style="position:static;vertical-align:middle;background:${TAGC[t]}">${t}</i>`:'';
+const tagH=t=>t?`<i class="tag" style="background:${TAGC[t]}">${t==='Lisens'?'Lisens':t}</i>`:'';
+const MND=['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+const nowLocal=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
+const fmt=dt=>{const[d,t]=dt.split('T');return d.split('-').reverse().join('.')+(t?' kl. '+t:'')};
+const EMO=Object.fromEntries([...G('SE'),...G('NO')].flatMap(g=>g[1]).map(x=>[x[0],x[1]]));
+function topo(el,opt){const m=L.map(el,Object.assign({zoomControl:true},opt||{}));
+ // Grunnkart: OpenTopoMap (dekker Sverige og resten av Norden). Kartverket topo legges oppå og dekker Norge.
+ L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,maxNativeZoom:17,attribution:'© <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA), © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(m);
+ L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png',{maxZoom:18,bounds:[[57.7,4.0],[71.5,31.5]],errorTileUrl:'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',attribution:'© <a href="https://www.kartverket.no/">Kartverket</a>'}).addTo(m);
+ return m}
+const NORGE=[[57.9,4.5],[71.2,31.1]];
+const icon=sp=>L.divIcon({className:'emk',html:EMO[sp]||'📍',iconSize:[34,34],iconAnchor:[17,17]});
+var SLUG,CREDITS;let tab='arter',yearSel=null,group='art',pending=[];
+
+function setTab(t){tab=t;['arter','ar','st','lag','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x===t));$('hsub').textContent=modeText();(t==='arter'?renderArter:t==='ar'?renderAr:t==='st'?renderStat:t==='lag'?renderJaktlag:renderSettings)()}
+$('t-arter').onclick=()=>setTab('arter');$('t-ar').onclick=()=>setTab('ar');$('t-st').onclick=()=>setTab('st');$('t-lag').onclick=()=>setTab('lag');
+
+const landSeg=(id,cur)=>`<div class="seg" id="${id}">${['NO','SE'].map(l=>`<button type="button" data-l="${l}" class="${cur===l?'on':''}">${LAND[l].flagg} ${LAND[l].navn}</button>`).join('')}</div>`;
+// Fugler: alle fuglearter samles i én sammenleggbar rad under Småvilt (begge land)
+const BIRDS=new Set(['Rype','Storfugl','Orrfugl','Jerpe','Fasan','Ender','Fremmede ender','Ærfugl','Gjess','Skarv','Ringdue','Rugde','Enkeltbekkasin','Gråtrost','Kråkefugler',
+ 'Ripa','Tjäder','Orre','Järpe','Rapphöna','Änder','Gäss','Morkulla','Ringduva','Nötskrika','Kråkfåglar','Måsar']);
+const isBird=n=>BIRDS.has(n);let fugOpen=sessionStorage.getItem('jaktlogg.fugler')==='1';
+async function renderArter(){const all=(await Store.list()).filter(e=>cty(e)===land),c={};all.forEach(e=>c[e.species]=(c[e.species]||0)+1);
+ const known=new Set(G().flatMap(g=>g[1].map(x=>x[0])));const other=all.filter(e=>!known.has(e.species)).length;
+ $('view').innerHTML=`<div class="landrow">${landSeg('ls',land)}</div><button class="btn" id="nyf" style="margin-top:10px">+ Ny fangst</button>`+G().map(([g,list])=>{const birds=list.filter(x=>isBird(x[0])),rest=list.filter(x=>!isBird(x[0]));const tile=([n,e,sl,info,tg])=>{const k=isOther(n)?other:(c[n]||0);
+  const no=land==='SE'&&info&&!isOther(n)?info.split(/[.:]/)[0]:'';const nos=no&&no.length<22?`<span class="no">${esc(no.toLowerCase())}</span>`:'';
+  return `<button class="tile ${k?'has':''} ${sl?'pic':''}" data-s="${n}" ${sl?`style="background-image:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(5,10,6,.88)),url(assets/species/${sl}.jpg)"`:''}>${sl?'':`<div class="e">${e}</div>`}<b>${n}</b>${nos}<small>${k?k+' fangst'+(k>1?'er':''):'Ingen ennå'}</small></button>`};
+  const bk=birds.reduce((a,x)=>a+(c[x[0]]||0),0);
+  const fug=birds.length?`<button class="fugrow ${fugOpen?'open':''} ${bk?'has':''}" id="fug" aria-expanded="${fugOpen}"><span class="fe"><img src="assets/species/rype.jpg" alt="Fjellrype" loading="lazy"></span><span class="ft"><b>Fugler</b><small>${birds.length} arter · ${bk?bk+' fangst'+(bk>1?'er':''):'ingen fangster ennå'}</small></span><span class="chev">${fugOpen?'▾':'▸'}</span></button>${fugOpen?`<div class="tiles fugtiles">${birds.map(tile).join('')}</div>`:''}`:'';
+  return `<h2>${g} <span class="cnt">${list.filter(x=>!isOther(x[0])).length} arter</span></h2>${fug}<div class="tiles">${rest.map(tile).join('')}</div>`}).join('')+
+  `<p class="src">Arter med jakttid i ${LAND[land].navn} etter <a href="${LAND[land].kilde}">${LAND[land].kildeTxt}</a>. Jakttider og områder: se gjeldende forskrift. «Lisens»/«Kvote»/«Skyddsjakt» = kun etter vedtak.</p>`;
+ document.querySelectorAll('#ls button').forEach(b=>b.onclick=()=>{setLand(b.dataset.l);renderArter()});$('nyf').onclick=()=>renderForm(null);
+ document.querySelectorAll('.tile').forEach(t=>t.onclick=()=>renderSpecies(t.dataset.s));
+ if($('fug'))$('fug').onclick=()=>{const y=scrollY;fugOpen=!fugOpen;sessionStorage.setItem('jaktlogg.fugler',fugOpen?'1':'0');renderArter().then(()=>scrollTo(0,y))};scrollTo(0,0)}
+
+async function renderSpecies(sp){const known=new Set(G().flatMap(g=>g[1].map(x=>x[0])));const it=ITEM(land,sp)||[];
+ const list=(await Store.list()).filter(e=>cty(e)===land&&(isOther(sp)?!known.has(e.species):e.species===sp)).sort((a,b)=>b.datetime.localeCompare(a.datetime));
+ $('view').innerHTML=`<button class="back" id="bk">‹ Alle arter (${LAND[land].flagg} ${LAND[land].navn})</button><h2 style="margin-top:4px">${esc(sp)} <span class="cnt">${list.length}</span></h2>${cleanNote(it[3])?`<p style="color:var(--m);font-size:14px;margin:-4px 0 10px">${esc(cleanNote(it[3]))}</p>`:''}
+ <button class="btn" id="new">+ Ny fangst</button>`+(list.length?`<div class="grid" style="margin-top:16px">${list.map(card).join('')}</div>`:`<div class="empty">Ingen fangster av ${esc(sp.toLowerCase())} logget ennå</div>`);
+ $('bk').onclick=renderArter;$('new').onclick=()=>renderForm(sp);bindCards(()=>renderSpecies(sp));scrollTo(0,0)}
+
+// Kjønn/alder-klasser (sett-og-skutt-stil). Arter uten oppføring (småvilt/fugl m.m.) hopper over steget.
+const cleanNote=t=>(t||'').split(/\.\s*/).filter(p=>p&&!/fremmed|främmande|bilaga|introdusert|lisens|licens|kvot|skyddsjakt/i.test(p)).join('. ').trim();
+const KLASSER={Elg:['Elgokse','Elgku','Elgkalv'],Hjort:['Bukk','Hind','Kalv'],Rådyr:['Bukk','Geit','Kje'],Villrein:['Bukk','Simle','Kalv'],Villsvin:['Galt','Purke','Unge'],
+ Dåhjort:['Bukk','Hind','Kalv'],Muflon:['Vær','Søye','Lam'],Bjørn:['Hann','Binne','Unge'],Ulv:['Hann','Hunn','Valp'],Jerv:['Hann','Hunn','Unge'],Gaupe:['Hann','Hunn','Unge'],
+ Älg:['Älgtjur','Älgko','Älgkalv'],Kronhjort:['Hjort','Hind','Kalv'],Dovhjort:['Hjort','Hind','Kalv'],Rådjur:['Bock','Get','Kid'],Vildsvin:['Galt','Sugga','Kulting'],Mufflonfår:['Bagge','Tacka','Lamm'],
+ Björn:['Hane','Hona','Unge'],Varg:['Hane','Hona','Valp'],Lo:['Hane','Hona','Unge'],Järv:['Hane','Hona','Unge']};
+const ukjent=c=>c==='SE'?'Okänt':'Ukjent';
+const kl=x=>x.klasse?` · ${esc(x.klasse)}`:'';
+function pickKlasse(sp,c){const o=KLASSER[sp];if(!o)return Promise.resolve(undefined);return new Promise(res=>{const d=document.createElement('div');d.className='sheetbg';
+ d.innerHTML=`<div class="sheet" role="dialog" aria-label="Velg kjønn og alder"><h2 style="margin:0 0 4px">${esc(sp)}</h2><p style="color:var(--m);font-size:14px;margin:0 0 12px">${c==='SE'?'Kön och ålder':'Kjønn og alder'} – trykk for å lagre</p>
+ <div class="kgrid">${o.map(k=>`<button class="btn kbtn" data-k="${k}">${k}</button>`).join('')}<button class="btn sec kbtn" data-k="${ukjent(c)}">${ukjent(c)}</button></div>
+ <button class="btn sec" id="kback" style="margin-top:12px;width:100%">‹ Tilbake</button></div>`;document.body.appendChild(d);
+ const done=v=>{d.remove();res(v)};d.querySelectorAll('.kbtn').forEach(b=>b.onclick=()=>done(b.dataset.k));$('kback').onclick=()=>done(null);d.onclick=e=>{if(e.target===d)done(null)}})}
+function card(x){const n=x.photos.length;return `<div class="card" data-id="${x.id}">${n?`<img src="${x.photos[0]}" alt="">`:'<div class="ph"></div>'}${n>1?`<span class="nphoto">📷 ${n}</span>`:''}<div><b>${esc(x.species)}${cty(x)==='SE'?' 🇸🇪':''}</b>${x.klasse?`<small class="kl">${esc(x.klasse)}</small>`:''}<small>${fmt(x.datetime)}</small>${x.sted?`<div class="pin">📍 ${esc(x.sted)}</div>`:''}</div></div>`}
+function bindCards(refresh){document.querySelectorAll('.card').forEach(c=>c.onclick=()=>detail(c.dataset.id,refresh))}
+
+function renderForm(sp){pending=[];let fl=land;const back=sp?()=>renderSpecies(sp):renderArter;
+ const catOf=(l,n)=>{const g=G(l).find(g=>g[1].some(x=>x[0]===n));return g?g[0]:'Storvilt'};let fc=sp?catOf(fl,sp):'Storvilt';
+ $('view').innerHTML=`<button class="back" id="bk">‹ ${sp?esc(sp):'Alle arter'}</button><div class="panel"><h2 style="margin-top:0">Ny fangst</h2><form id="f">
+ <label>Land</label>${landSeg('fl',fl)}
+ <label>Kategori</label><div class="seg" id="fc">${['Storvilt','Småvilt'].map(c=>`<button type="button" data-c="${c}">${c}</button>`).join('')}</div>
+ <label>Art<select id="fsp" required></select></label><div id="kwrap"></div><p id="finfo" style="font-size:13px;color:var(--m);margin:6px 2px 0"></p>
+ <label id="otherL" style="display:none">Hvilken art?<input id="other" placeholder="Skriv art"></label>
+ <label>Sted (valgfritt)<input id="sted" placeholder="f.eks. Trollheimen eller «ved Storvatnet»"></label>
+ <label>Posisjon på kart (valgfritt)</label><div class="map" id="fmap"></div>
+ <div class="maprow"><button type="button" class="btn sec" id="gps">📍 Bruk min posisjon</button><button type="button" class="btn sec" id="clr">Fjern</button><small id="pos">Trykk på kartet for å sette en nål</small></div>
+ <label>Dato og tid<input type="datetime-local" id="dt" required value="${nowLocal()}"></label>
+ <label>Bilder<input type="file" id="photos" accept="image/*" multiple></label><div class="thumbs" id="th"></div>
+ <label>Notater (valgfritt)<textarea id="notes" rows="3"></textarea></label>
+ <button class="btn" style="margin-top:16px">Lagre</button></form></div>`;
+ $('bk').onclick=back;
+ const fillSp=keep=>{document.querySelectorAll('#fl button').forEach(b=>b.classList.toggle('on',b.dataset.l===fl));document.querySelectorAll('#fc button').forEach(b=>b.classList.toggle('on',b.dataset.c===fc));
+  const list=G(fl).find(g=>g[0]===fc)[1];const opt=x=>`<option value="${esc(x[0])}">${esc(x[0])}</option>`,fb=list.filter(x=>isBird(x[0]));
+  $('fsp').innerHTML=list.filter(x=>!isBird(x[0])&&!isOther(x[0])).map(opt).join('')+(fb.length?`<optgroup label="🐦 Fugler">${fb.map(opt).join('')}</optgroup>`:'')+list.filter(x=>isOther(x[0])).map(opt).join('');
+  if(keep&&list.some(x=>x[0]===keep))$('fsp').value=keep;spInfo()};
+ const spInfo=()=>{const ko=KLASSER[$('fsp').value];$('kwrap').innerHTML=ko?`<div class="klab">Type</div><div class="kgrid" role="radiogroup">${[...ko,ukjent(fl)].map((k,i)=>`<label class="kopt"><input type="radio" name="kl" value="${esc(k)}"${i===ko.length?' checked':''}><span>${esc(k)}</span></label>`).join('')}</div>`:'';const it=ITEM(fl,$('fsp').value)||[];$('otherL').style.display=isOther(it[0])?'':'none';$('other').required=isOther(it[0]);
+  $('finfo').innerHTML=(it[4]&&it[4]!=='Fremmed art'?'⚠️ Kun etter vedtak (lisens/kvote/skyddsjakt). ':'')+esc(it[3]||'')};
+ document.querySelectorAll('#fl button').forEach(b=>b.onclick=()=>{const cur=$('fsp').value;fl=b.dataset.l;fillSp(cur);fm.fitBounds(LAND[fl].bounds)});
+ document.querySelectorAll('#fc button').forEach(b=>b.onclick=()=>{fc=b.dataset.c;fillSp()});$('fsp').onchange=spInfo;
+ window._formSet=(l,c,n)=>{fl=l;fc=c;fillSp(n);fm.fitBounds(LAND[fl].bounds)};
+ let ll=null,pin=null;const fm=topo('fmap');fm.fitBounds(LAND[fl].bounds);fillSp(sp);
+ const setPos=(p,zoom)=>{ll={lat:+p.lat.toFixed(5),lng:+p.lng.toFixed(5)};if(!pin){pin=L.marker(p,{draggable:true,icon:icon($('fsp').value)}).addTo(fm);pin.on('dragend',()=>setPos(pin.getLatLng()))}else pin.setLatLng(p);
+  if(zoom)fm.setView(p,13);$('pos').textContent=`${ll.lat}, ${ll.lng} · dra nålen for å justere`};
+ fm.on('click',e=>setPos(e.latlng));
+ $('clr').onclick=()=>{if(pin)fm.removeLayer(pin);pin=null;ll=null;$('pos').textContent='Trykk på kartet for å sette en nål'};
+ $('gps').onclick=()=>{if(!navigator.geolocation){$('pos').textContent='Posisjon er ikke tilgjengelig i denne nettleseren';return}
+  $('pos').textContent='Henter posisjon …';navigator.geolocation.getCurrentPosition(p=>setPos(L.latLng(p.coords.latitude,p.coords.longitude),true),
+  e=>{$('pos').textContent=e.code===1?'Tilgang til posisjon ble avslått. Trykk på kartet i stedet.':'Fant ikke posisjonen. Trykk på kartet i stedet.'},{enableHighAccuracy:true,timeout:15000})};
+ window._fm=fm;window._setPos=setPos;
+ const th=()=>{$('th').innerHTML=pending.map((p,i)=>`<div><img src="${p}" alt=""><button type="button" data-i="${i}" aria-label="Fjern">×</button></div>`).join('');
+  $('th').querySelectorAll('button').forEach(b=>b.onclick=()=>{pending.splice(+b.dataset.i,1);th()})};
+ $('photos').onchange=async e=>{for(const f of e.target.files)pending.push(await shrink(f));e.target.value='';th()};
+ $('f').onsubmit=async ev=>{ev.preventDefault();const pick=$('fsp').value,species=isOther(pick)?$('other').value.trim():pick;if(!species)return;
+  const kr=document.querySelector('#kwrap input[name=kl]:checked');const klasse=kr&&KLASSER[pick]?kr.value:undefined;
+  try{await Store.add({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),species,country:fl,...(klasse?{klasse}:{}),datetime:$('dt').value,sted:$('sted').value.trim(),notes:$('notes').value.trim(),photos:pending,...(ll?{lat:ll.lat,lng:ll.lng}:{})})}
+  catch(err){alert('Kunne ikke lagre: '+(err&&err.message||'lagringsplassen kan være full.'));return}
+  setLand(fl);renderSpecies(pick)};scrollTo(0,0)}
+
+function shrink(f){return new Promise(ok=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas'),s=Math.min(1,1200/Math.max(i.width,i.height));c.width=Math.round(i.width*s);c.height=Math.round(i.height*s);c.getContext('2d').drawImage(i,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.78))};i.src=r.result};r.readAsDataURL(f)})}
+
+async function detail(id,refresh){const x=(await Store.list()).find(e=>e.id===id);if(!x)return;const n=x.photos.length;
+ $('detail').innerHTML=(n?`<div class="gal" id="gal">${x.photos.map(p=>`<img src="${p}" alt="">`).join('')}</div><div class="dots" id="dots">Bilde 1 av ${n}${n>1?' · sveip for flere':''}</div>`:'')+
+ `<h2>${esc(x.species)}</h2><p>${LAND[cty(x)].flagg} Land: <b>${LAND[cty(x)].navn}</b></p>${x.klasse?`<p>🦌 Kjønn/alder: <b>${esc(x.klasse)}</b></p>`:''}<p>🕒 <b>${fmt(x.datetime)}</b></p><p>📍 Sted: <b>${esc(x.sted)||'–'}</b></p><p>Notater: <b>${esc(x.notes)||'–'}</b></p>${x.lat!=null?'<div class="map" id="dmap"></div>':''}
+ <div id="tshare"></div><button class="btn danger" id="del" style="margin-top:14px">Slett fangst</button><button class="btn sec" id="close" style="margin-top:8px">Lukk</button>`;
+ $('m').classList.add('open');if(n>1)$('gal').onscroll=e=>{const i=Math.round(e.target.scrollLeft/e.target.clientWidth)+1;$('dots').textContent=`Bilde ${i} av ${n} · sveip for flere`};
+ if(x.lat!=null){const dm=topo('dmap',{dragging:true});dm.setView([x.lat,x.lng],12);L.marker([x.lat,x.lng],{icon:icon(x.species)}).addTo(dm)}
+ $('close').onclick=()=>$('m').classList.remove('open');teamShareUI(x);
+ $('del').onclick=async()=>{if(confirm('Slette denne fangsten?')){await Store.delete(id);$('m').classList.remove('open');refresh()}}}
+$('m').onclick=e=>{if(e.target.id==='m')$('m').classList.remove('open')};
+
+
+// ---- Statistikk: troféoversikt + kalender ----
+// Jaktår: Norge 1. april–31. mars (SSBs jaktår), Sverige 1. juli–30. juni (svensk jaktår).
+let stView='trofe',stLand='alle',stSeason='alle',calMon=null,calDay=null;
+const jaktaar=e=>{const y=+e.datetime.slice(0,4),m=+e.datetime.slice(5,7),s=cty(e)==='SE'?7:4,a=m>=s?y:y-1;return a+'/'+String((a+1)%100).padStart(2,'0')};
+const stSeg=()=>`<div class="seg" id="sv" style="margin:0 0 10px">${[['trofe','🏆 Troféoversikt'],['kal','📅 Kalender']].map(([k,t])=>`<button data-v="${k}" class="${stView===k?'on':''}">${t}</button>`).join('')}</div><div class="seg" id="sl" style="margin:0">${[['alle','Alle land'],['NO','🇳🇴 Norge'],['SE','🇸🇪 Sverige']].map(([k,t])=>`<button data-l="${k}" class="${stLand===k?'on':''}">${t}</button>`).join('')}</div>`;
+function bindSt(){document.querySelectorAll('#sv button').forEach(b=>b.onclick=()=>{stView=b.dataset.v;renderStat()});document.querySelectorAll('#sl button').forEach(b=>b.onclick=()=>{stLand=b.dataset.l;stSeason='alle';calDay=null;renderStat()})}
+async function renderStat(){const all=(await Store.list()).filter(x=>stLand==='alle'||cty(x)===stLand);(stView==='kal'?renderKal:renderTrofe)(all)}
+function renderTrofe(all){const seasons=[...new Set(all.map(jaktaar))].sort().reverse();if(!seasons.includes(stSeason))stSeason='alle';
+ const e=stSeason==='alle'?all:all.filter(x=>jaktaar(x)===stSeason);
+ const byC={};e.forEach(x=>{const c=cty(x),s=x.species;byC[c]=byC[c]||{};const o=byC[c][s]=byC[c][s]||{n:0,k:{}};o.n++;if(x.klasse)o.k[x.klasse]=(o.k[x.klasse]||0)+1});
+ const sec=c=>{const sp=Object.entries(byC[c]||{}).sort((a,b)=>b[1].n-a[1].n||a[0].localeCompare(b[0],'no'));if(!sp.length)return'';const tot=sp.reduce((a,b)=>a+b[1].n,0),mx=sp[0][1].n;
+  return `<h2>${LAND[c].flagg} ${LAND[c].navn} <span class="cnt">${tot}</span></h2><div class="panel">${sp.map(([s,o])=>`<div class="strow"><div class="sttop"><b>${esc(s)}</b><span>${o.n}</span></div><div class="stbar"><i style="width:${Math.max(6,o.n/mx*100)}%"></i></div>${Object.keys(o.k).length?`<small>${Object.entries(o.k).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${esc(k)} ${n}`).join(' · ')}</small>`:''}</div>`).join('')}</div>`};
+ const perS=seasons.map(s=>[s,all.filter(x=>jaktaar(x)===s).length]),smx=Math.max(1,...perS.map(x=>x[1]));
+ $('view').innerHTML=`<div class="panel">${stSeg()}<div class="chips" style="margin-top:10px"><button data-s="alle" class="${stSeason==='alle'?'on':''}">Alle jaktår</button>${seasons.map(s=>`<button data-s="${s}" class="${s===stSeason?'on':''}">${s}</button>`).join('')}</div>
+  <div class="stsum"><div><b>${e.length}</b><small>fangster</small></div><div><b>${new Set(e.map(x=>x.species)).size}</b><small>arter</small></div><div><b>${seasons.length}</b><small>jaktår</small></div></div></div>`+
+  (e.length?(['NO','SE'].map(sec).join('')+(stSeason==='alle'&&perS.length>1?`<h2>Per jaktår</h2><div class="panel">${perS.map(([s,n])=>`<div class="strow"><div class="sttop"><b>${s}</b><span>${n}</span></div><div class="stbar"><i style="width:${Math.max(6,n/smx*100)}%"></i></div></div>`).join('')}</div>`:'')):'<div class="empty">Ingen fangster ennå.</div>')+
+  `<p style="color:var(--m);font-size:12px;margin:8px 4px 90px">Jaktår: Norge 1. april–31. mars, Sverige 1. juli–30. juni.</p>`;
+ bindSt();document.querySelectorAll('.chips button[data-s]').forEach(b=>b.onclick=()=>{stSeason=b.dataset.s;renderStat()})}
+function renderKal(all){const days={};all.forEach(x=>{const d=x.datetime.slice(0,10);(days[d]=days[d]||[]).push(x)});
+ if(!calMon){const l=all.map(x=>x.datetime.slice(0,7)).sort().pop();calMon=l||new Date().toISOString().slice(0,7)}
+ const[y,m]=calMon.split('-').map(Number),first=(new Date(y,m-1,1).getDay()+6)%7,nd=new Date(y,m,0).getDate(),today=new Date().toISOString().slice(0,10);
+ const mc=all.filter(x=>x.datetime.slice(0,7)===calMon).length;let cells='';for(let i=0;i<first;i++)cells+='<div></div>';
+ for(let d=1;d<=nd;d++){const k=`${calMon}-${String(d).padStart(2,'0')}`,l=days[k]||[];cells+=`<button class="cday${l.length?' has':''}${k===calDay?' sel':''}${k===today?' tod':''}" data-d="${k}"><span>${d}</span>${l.length?`<i>${l.slice(0,3).map(x=>EMO[x.species]||'🎯').join('')}</i>${l.length>3?`<em>+${l.length-3}</em>`:''}`:''}</button>`}
+ const sel=calDay&&days[calDay]?days[calDay].sort((a,b)=>a.datetime.localeCompare(b.datetime)):[];
+ $('view').innerHTML=`<div class="panel">${stSeg()}<div class="calhd"><button id="cp" aria-label="Forrige måned">‹</button><b>${MND[m-1][0].toUpperCase()+MND[m-1].slice(1)} ${y}</b><button id="cn" aria-label="Neste måned">›</button></div><p style="text-align:center;color:var(--m);font-size:13px;margin:0 0 8px">${mc} fangst${mc===1?'':'er'} denne måneden</p>
+  <div class="cal">${['Ma','Ti','On','To','Fr','Lø','Sø'].map(d=>`<div class="cwd">${d}</div>`).join('')}${cells}</div></div>`+
+  (calDay?`<h2>${+calDay.slice(8)}. ${MND[m-1]} ${y} <span class="cnt">${sel.length}</span></h2>${sel.length?`<div class="grid">${sel.map(card).join('')}</div>`:'<div class="empty">Ingen fangster denne dagen.</div>'}`:'<p style="color:var(--m);text-align:center;font-size:13px">Trykk på en dag for å se fangstene.</p>')+'<div style="height:90px"></div>';
+ bindSt();const mv=n=>{const d=new Date(y,m-1+n,1);calMon=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');calDay=null;renderStat()};$('cp').onclick=()=>mv(-1);$('cn').onclick=()=>mv(1);
+ document.querySelectorAll('.cday').forEach(b=>b.onclick=()=>{calDay=calDay===b.dataset.d?null:b.dataset.d;renderStat()});bindCards(renderStat)}
+async function renderAr(){const all=(await Store.list()).filter(x=>arLand==='alle'||cty(x)===arLand);const years=[...new Set(all.map(e=>+e.datetime.slice(0,4)))].sort((a,b)=>b-a);
+ if(!years.length){$('view').innerHTML=(arLand!=='alle'?`<div class="panel"><div class="seg" id="al" style="margin:0">${[['alle','Alle land'],['NO','🇳🇴 Norge'],['SE','🇸🇪 Sverige']].map(([k,t])=>`<button data-a="${k}" class="${arLand===k?'on':''}">${t}</button>`).join('')}</div></div>`:'')+'<div class="empty">Ingen fangster logget ennå. Velg en art under «Arter» for å legge til.</div>';document.querySelectorAll('#al button').forEach(b=>b.onclick=()=>{arLand=b.dataset.a;renderAr()});return}
+ if(!years.includes(yearSel))yearSel=years[0];
+ const e=all.filter(x=>+x.datetime.slice(0,4)===yearSel).sort((a,b)=>b.datetime.localeCompare(a.datetime)),g={};
+ e.forEach(x=>{const k=group==='art'?x.species+(arLand==='alle'&&cty(x)==='SE'?' 🇸🇪':''):x.datetime.slice(0,7);(g[k]=g[k]||[]).push(x)});
+ const keys=Object.keys(g).sort(group==='art'?(a,b)=>g[b].length-g[a].length||a.localeCompare(b,'no'):(a,b)=>b.localeCompare(a));
+ const title=k=>group==='art'?k:(m=>MND[+m-1][0].toUpperCase()+MND[+m-1].slice(1))(k.slice(5));
+ $('view').innerHTML=`<div class="panel"><div class="chips">${years.map(y=>`<button data-y="${y}" class="${y===yearSel?'on':''}">${y}</button>`).join('')}</div>
+ <div class="seg" id="al" style="margin:0 0 10px">${[['alle','Alle land'],['NO','🇳🇴 Norge'],['SE','🇸🇪 Sverige']].map(([k,t])=>`<button data-a="${k}" class="${arLand===k?'on':''}">${t}</button>`).join('')}</div><div class="total">${e.length} <small>fangst${e.length===1?'':'er'} i ${yearSel}</small></div>
+ <div class="seg"><button id="g-art" class="${group==='art'?'on':''}">Per art</button><button id="g-mnd" class="${group==='mnd'?'on':''}">Per måned</button><button id="g-kart" class="${group==='kart'?'on':''}">Kart</button></div></div>`+(group==='kart'?'<div class="map big" id="ymap"></div><p class="credit" id="ynote"></p>':''+
+ keys.map(k=>{const kc={};g[k].forEach(x=>{if(x.klasse)kc[x.klasse]=(kc[x.klasse]||0)+1});const ks=group==='art'&&Object.keys(kc).length?`<p style="color:var(--m);font-size:13px;margin:-6px 0 8px">${Object.entries(kc).map(([a,b])=>esc(a)+' '+b).join(' · ')}</p>`:'';return `<h2>${esc(title(k))} <span class="cnt">${g[k].length}</span></h2>${ks}<div class="grid">${g[k].map(card).join('')}</div>`}).join(''));
+ document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>{yearSel=+b.dataset.y;renderAr()});document.querySelectorAll('#al button').forEach(b=>b.onclick=()=>{arLand=b.dataset.a;renderAr()});
+ $('g-art').onclick=()=>{group='art';renderAr()};$('g-mnd').onclick=()=>{group='mnd';renderAr()};$('g-kart').onclick=()=>{group='kart';renderAr()};bindCards(renderAr);
+ if(group==='kart'){const ym=topo('ymap'),pts=e.filter(x=>x.lat!=null);
+  pts.forEach(x=>L.marker([x.lat,x.lng],{icon:icon(x.species)}).addTo(ym).bindPopup(`${x.photos[0]?`<img src="${x.photos[0]}" alt="">`:''}<b>${esc(x.species)}</b><br>${fmt(x.datetime)}${x.sted?'<br>📍 '+esc(x.sted):''}<br><a href="#" data-open="${x.id}">Åpne fangst</a>`));
+  ym.on('popupopen',ev=>{const a=ev.popup.getElement().querySelector('[data-open]');if(a)a.onclick=z=>{z.preventDefault();detail(a.dataset.open,renderAr)}});
+  pts.length?ym.fitBounds(L.latLngBounds(pts.map(x=>[x.lat,x.lng])).pad(.3),{maxZoom:11}):ym.fitBounds(arLand==='SE'?LAND.SE.bounds:arLand==='NO'?LAND.NO.bounds:[[55.3,4.5],[71.2,31.1]]);
+  $('ynote').textContent=`${pts.length} av ${e.length} fangster har kartposisjon`}}
+
+SLUG=Object.fromEntries([...G('NO'),...G('SE')].flatMap(g=>g[1]).filter(x=>x[2]).map(x=>[x[0],x[2]]));
+CREDITS=[{"n": "Elg", "f": "assets/species/elg.jpg", "a": "Ryan Hodnett", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:European_Elk_(Europeisk_Elg)_(Alces_alces_alces)_-_Bod%C3%B8,_Norway_2023-07-16.jpg", "t": "European Elk (Europeisk Elg) (Alces alces alces) - Bodø, Norway 2023-07-16.jpg"}, {"n": "Hjort", "f": "assets/species/hjort.jpg", "a": "Julian Herzog (Website)", "l": "CC BY 4.0", "lu": "https://creativecommons.org/licenses/by/4.0", "u": "https://commons.wikimedia.org/wiki/File:Red_Deer_Cervus_Elaphus_Richmond_Park_2025_01.jpg", "t": "Red Deer Cervus Elaphus Richmond Park 2025 01.jpg"}, {"n": "Rådyr", "f": "assets/species/radyr.jpg", "a": "Charles J. Sharp", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Roe_deer_(Capreolus_capreolus)_female_Cumnor.jpg", "t": "Roe deer (Capreolus capreolus) female Cumnor.jpg"}, {"n": "Rådyrbukk", "f": "assets/species/radyrbukk.jpg", "a": "Uoaei1", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Capreolus_capreolus_Wien_Zentralfriedhof_20221021_06.jpg", "t": "Capreolus capreolus Wien Zentralfriedhof 20221021 06.jpg"}, {"n": "Villsvin", "f": "assets/species/villsvin.jpg", "a": "Charles J. Sharp", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Wild_boar_(Sus_scrofa_vittatus)_juvenile.jpg", "t": "Wild boar (Sus scrofa vittatus) juvenile.jpg"}, {"n": "Villrein", "f": "assets/species/villrein.jpg", "a": "Pentti Impiö", "l": "CC BY 4.0", "lu": "https://creativecommons.org/licenses/by/4.0", "u": "https://commons.wikimedia.org/wiki/File:Rangifer_tarandus_fennicus_245142390.jpg", "t": "Rangifer tarandus fennicus 245142390.jpg"}, {"n": "Rype", "f": "assets/species/rype.jpg", "a": "Charles J. Sharp", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Rock_ptarmigan_(Lagopus_muta_islandorum)_female_breeding_Botnsvatn.jpg", "t": "Rock ptarmigan (Lagopus muta islandorum) female breeding Botnsvatn.jpg"}, {"n": "Hare", "f": "assets/species/hare.jpg", "a": "Charles J. Sharp", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Mountain_hare_(Lepus_timidus)_Oppdal.jpg", "t": "Mountain hare (Lepus timidus) Oppdal.jpg"}, {"n": "Storfugl", "f": "assets/species/storfugl.jpg", "a": "Richard Bartz, Munich aka Makro Freak", "l": "CC BY-SA 2.5", "lu": "https://creativecommons.org/licenses/by-sa/2.5", "u": "https://commons.wikimedia.org/wiki/File:Tetrao_urogallus_Richard_Bartz.jpg", "t": "Tetrao urogallus Richard Bartz.jpg"}, {"n": "Orrfugl", "f": "assets/species/orrfugl.jpg", "a": "Spjutkastare", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Orrtuppen.jpg", "t": "Orrtuppen.jpg"}, {"n": "Jerpe", "f": "assets/species/jerpe.jpg", "a": "Chinmay Rahane", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Hazel_Grouse.jpg", "t": "Hazel Grouse.jpg"}, {"n": "Rev", "f": "assets/species/rev.jpg", "a": "Uoaei1", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Vulpes_vulpes_Mallnitz_01.jpg", "t": "Vulpes vulpes Mallnitz 01.jpg"}, {"n": "Grevling", "f": "assets/species/grevling.jpg", "a": "Charles J. Sharp", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:European_badger_(Meles_meles_taxus)_Drenthe_2.jpg", "t": "European badger (Meles meles taxus) Drenthe 2.jpg"}, {"n": "Mår", "f": "assets/species/mar.jpg", "a": "Charles J. Sharp", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:European_pine_marten_(Martes_martes)_Drenthe_2.jpg", "t": "European pine marten (Martes martes) Drenthe 2.jpg"}, {"n": "Mink", "f": "assets/species/mink.jpg", "a": "Marton Berntsen", "l": "CC BY-SA 3.0", "lu": "https://creativecommons.org/licenses/by-sa/3.0", "u": "https://commons.wikimedia.org/wiki/File:Mink_(Neovison_vison).jpg", "t": "Mink (Neovison vison).jpg"}, {"n": "Røyskatt", "f": "assets/species/royskatt.jpg", "a": "Giles Laurent", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:035_Stoat_in_winter_coat_in_Parc_naturel_r%C3%A9gional_Jura_vaudois_Photo_by_Giles_Laurent.jpg", "t": "035 Stoat in winter coat in Parc naturel régional Jura vaudois Photo by Giles Laurent.jpg"}, {"n": "Bever", "f": "assets/species/bever.jpg", "a": "Ryzhkov Sergey", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:%D0%A0%D1%96%D1%87%D0%BA%D0%BE%D0%B2%D0%B8%D0%B9_%D0%B1%D0%BE%D0%B1%D0%B5%D1%80_(Castor_fiber).jpg", "t": "Річковий бобер (Castor fiber).jpg"}, {"n": "Ekorn", "f": "assets/species/ekorn.jpg", "a": "Rhododendrites", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Red_squirrel_(21808).jpg", "t": "Red squirrel (21808).jpg"}, {"n": "Ender", "f": "assets/species/ender.jpg", "a": "This picture was realized by Richard Bartz by using a Canon EF 70-300mm f/4-5.6 IS USM Lens", "l": "CC BY-SA 2.5", "lu": "https://creativecommons.org/licenses/by-sa/2.5", "u": "https://commons.wikimedia.org/wiki/File:Anas_platyrhynchos_male_female.jpg", "t": "Anas platyrhynchos male female.jpg"}, {"n": "Gjess", "f": "assets/species/gjess.jpg", "a": "H005, denoised by Pro2", "l": "Public domain", "lu": "", "u": "https://commons.wikimedia.org/wiki/File:Graugans_Anser_Anser.jpg", "t": "Graugans Anser Anser.jpg"}, {"n": "Ærfugl", "f": "assets/species/aerfugl.jpg", "a": "Stephan Sprinz", "l": "CC BY 4.0", "lu": "https://creativecommons.org/licenses/by/4.0", "u": "https://commons.wikimedia.org/wiki/File:Portrait_einer_m%C3%A4nnlichen_Eiderente_(Somateria_mollissima)_auf_Norderney.jpg", "t": "Portrait einer männlichen Eiderente (Somateria mollissima) auf Norderney.jpg"}, {"n": "Skarv", "f": "assets/species/skarv.jpg", "a": "Christian Ferrer", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Phalacrocorax_carbo,_H%C3%A9rault_River_cf01.jpg", "t": "Phalacrocorax carbo, Hérault River cf01.jpg"}, {"n": "Ringdue", "f": "assets/species/ringdue.jpg", "a": "Alexis LOURS", "l": "CC BY 2.0", "lu": "https://creativecommons.org/licenses/by/2.0", "u": "https://commons.wikimedia.org/wiki/File:Common_Wood_Pigeon_facing_left.jpg", "t": "Common Wood Pigeon facing left.jpg"}, {"n": "Rugde", "f": "assets/species/rugde.jpg", "a": "Stephan Sprinz", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Waldschnepfe_(scolopax_rusticola)_-_Spiekeroog,_Nationalpark_Nieders%C3%A4chsisches_Wattenmeer.jpg", "t": "Waldschnepfe (scolopax rusticola) - Spiekeroog, Nationalpark Niedersächsisches Wattenmeer.jpg"}, {"n": "Enkeltbekkasin", "f": "assets/species/enkeltbekkasin.jpg", "a": "Charles J. Sharp", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Common_snipe_(Gallinago_gallinago_faeroeensis)_Botnsvatn.jpg", "t": "Common snipe (Gallinago gallinago faeroeensis) Botnsvatn.jpg"}, {"n": "Kråkefugler", "f": "assets/species/kraakefugler.jpg", "a": "Petar Milošević", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Hooded_crow_(Corvus_cornix)_at_Gulf_of_Trieste.jpg", "t": "Hooded crow (Corvus cornix) at Gulf of Trieste.jpg"}, {"n": "Måker", "f": "assets/species/maker.jpg", "a": "Ввласенко", "l": "CC BY-SA 3.0", "lu": "https://creativecommons.org/licenses/by-sa/3.0", "u": "https://commons.wikimedia.org/wiki/File:Head_of_European_herring_gull_(Larus_argentatus)._Saint-Malo,_France.jpg", "t": "Head of European herring gull (Larus argentatus). Saint-Malo, France.jpg"}, {"n": "Gråtrost", "f": "assets/species/graatrost.jpg", "a": "Anaxibia (Andrey Polstianoi)", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Turdus_pilaris_on_Crataegus_in_winter.jpg", "t": "Turdus pilaris on Crataegus in winter.jpg"}, {"n": "Fasan", "f": "assets/species/fasan.jpg", "a": "Charles J. Sharp", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Common_pheasant_(Phasianus_colchicus)_male_3.jpg", "t": "Common pheasant (Phasianus colchicus) male 3.jpg"}, {"n": "Bjørn / Björn", "f": "assets/species/bjorn.jpg", "a": "Charles J. Sharp", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Eurasian_brown_bear_(Ursus_arctos_arctos)_female_1.jpg", "t": "Eurasian brown bear (Ursus arctos arctos) female 1.jpg"}, {"n": "Ulv / Varg", "f": "assets/species/ulv.jpg", "a": "Clément Bardot", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Loup_gris_(Canis_lupus_).jpg", "t": "Loup gris (Canis lupus ).jpg"}, {"n": "Gaupe / Lo", "f": "assets/species/gaupe.jpg", "a": "Carlos Delgado", "l": "CC BY-SA 3.0", "lu": "https://creativecommons.org/licenses/by-sa/3.0", "u": "https://commons.wikimedia.org/wiki/File:Lynx_lynx_-_05.jpg", "t": "Lynx lynx - 05.jpg"}, {"n": "Jerv / Järv", "f": "assets/species/jerv.jpg", "a": "Musicaline", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Glouton_DSCF6836.jpg", "t": "Glouton DSCF6836.jpg"}, {"n": "Dåhjort / Dovhjort", "f": "assets/species/dahjort.jpg", "a": "Julian Herzog (Website)", "l": "CC BY 4.0", "lu": "https://creativecommons.org/licenses/by/4.0", "u": "https://commons.wikimedia.org/wiki/File:Fallow_Deer_Dama_Dama_in_Richmond_Park_2023_03.jpg", "t": "Fallow Deer Dama Dama in Richmond Park 2023 03.jpg"}, {"n": "Muflon / Mufflonfår", "f": "assets/species/muflon.jpg", "a": "Clément Bardot", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Mouflon_Corse.jpg", "t": "Mouflon Corse.jpg"}, {"n": "Mårhund / Mårdhund", "f": "assets/species/marhund.jpg", "a": "Ryzhkov Sergey", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:%D0%84%D0%BD%D0%BE%D1%82%D0%BE%D0%B2%D0%B8%D0%B4%D0%BD%D0%B8%D0%B9_%D1%81%D0%BE%D0%B1%D0%B0%D0%BA%D0%B0_(Nyctereutes_procyonoides).jpg", "t": "Єнотовидний собака (Nyctereutes procyonoides).jpg"}, {"n": "Vaskebjørn / Tvättbjörn", "f": "assets/species/vaskebjorn.jpg", "a": "Darkone", "l": "CC BY-SA 2.5", "lu": "https://creativecommons.org/licenses/by-sa/2.5", "u": "https://commons.wikimedia.org/wiki/File:Raccoon_(Procyon_lotor)_3.jpg", "t": "Raccoon (Procyon lotor) 3.jpg"}, {"n": "Bisam", "f": "assets/species/bisam.jpg", "a": "Cephas", "l": "CC BY-SA 3.0", "lu": "https://creativecommons.org/licenses/by-sa/3.0", "u": "https://commons.wikimedia.org/wiki/File:Ondatra_zibethicus_CT.jpg", "t": "Ondatra zibethicus CT.jpg"}, {"n": "Kanin / Vildkanin", "f": "assets/species/kanin.jpg", "a": "JM Ligero Loarte", "l": "CC BY 3.0", "lu": "https://creativecommons.org/licenses/by/3.0", "u": "https://commons.wikimedia.org/wiki/File:Oryctolagus_cuniculus_Rcdo.jpg", "t": "Oryctolagus cuniculus Rcdo.jpg"}, {"n": "Sørhare / Fälthare", "f": "assets/species/sorhare.jpg", "a": "Charles J. Sharp", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:European_hare_(Lepus_europaeus)_Marken_2.jpg", "t": "European hare (Lepus europaeus) Marken 2.jpg"}, {"n": "Iller", "f": "assets/species/iller.jpg", "a": "Byrdyak", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:%D0%A2%D1%85%D1%96%D1%80_%D0%BB%D1%96%D1%81%D0%BE%D0%B2%D0%B8%D0%B9.jpg", "t": "Тхір лісовий.jpg"}, {"n": "Rapphöna (rapphøne)", "f": "assets/species/rapphone.jpg", "a": "Roger Culos", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Perdix_perdix_hispaniensis_MHNT_PHAS_1996_18.jpg", "t": "Perdix perdix hispaniensis MHNT PHAS 1996 18.jpg"}, {"n": "Säl (sel)", "f": "assets/species/sel.jpg", "a": "Diego Delso", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Focas_grises_(Halichoerus_grypus),_playa_de_Horsey,_Norfolk,_Inglaterra,_2022-11-20,_DD_11.jpg", "t": "Focas grises (Halichoerus grypus), playa de Horsey, Norfolk, Inglaterra, 2022-11-20, DD 11.jpg"}, {"n": "Nötskrika (nøtteskrike)", "f": "assets/species/notskrike.jpg", "a": "Zeynel Cebeci", "l": "CC BY-SA 4.0", "lu": "https://creativecommons.org/licenses/by-sa/4.0", "u": "https://commons.wikimedia.org/wiki/File:Alakarga_-_Eurasian_Jay_-_Garrulus_glandarius_03.jpg", "t": "Alakarga - Eurasian Jay - Garrulus glandarius 03.jpg"}];
+function showCredits(){$('detail').innerHTML=`<h2 style="margin-top:0">Bildekreditter</h2><p>Bakgrunn: «River in the heart of Trollheimen mountains», Jakub Fryš, <a href="https://commons.wikimedia.org/wiki/File:River_in_the_heart_of_Trollheimen_mountains.jpg">Wikimedia Commons</a>, CC BY-SA 4.0.</p><p>Artsbilder fra Wikimedia Commons, beskåret og komprimert:</p>`+
+ CREDITS.map(c=>`<p style="display:flex;gap:10px;align-items:center"><img src="${c.f}" alt="" style="width:44px;height:44px;border-radius:8px;flex:none"><span><b>${esc(c.n)}</b>: ${esc(c.a)}, <a href="${c.lu||c.u}">${esc(c.l)}</a>, <a href="${c.u}">kilde</a></span></p>`).join('')+
+ `<p>Kart: © Kartverket (fallback © OpenTopoMap, © OpenStreetMap).</p><button class="btn sec" id="close">Lukk</button>`;$('m').classList.add('open');$('close').onclick=()=>$('m').classList.remove('open')}
+
+/* ---------- Supabase (valgfritt, personlig) ---------- */
+const CFG_KEY='jaktlogg.supabase';let sb=null,sbUser=null;
+const cfg=()=>{try{return JSON.parse(localStorage.getItem(CFG_KEY)||'null')}catch(e){return null}};
+function keyRole(k){if(/^sb_secret_/.test(k))return 'service_role';try{return JSON.parse(atob(k.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).role}catch(e){return /^sb_publishable_/.test(k)?'anon':null}}
+function loadLib(){return window.supabase?Promise.resolve():new Promise((ok,err)=>{const t=document.createElement('script');t.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';t.onload=ok;t.onerror=()=>err(new Error('Kunne ikke laste supabase-js'));document.head.appendChild(t)})}
+const isoToLocal=iso=>{const d=new Date(iso);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
+const SupabaseStore={
+ async list(){const{data,error}=await sb.from('entries').select('*').order('taken_at',{ascending:false});if(error)throw error;
+  const paths=data.flatMap(r=>r.photos||[]),url={};
+  if(paths.length){const{data:sig,error:e2}=await sb.storage.from('photos').createSignedUrls(paths,3600);if(e2)throw e2;sig.forEach(x=>url[x.path]=x.signedUrl)}
+  return data.map(r=>({id:r.id,species:r.species,datetime:isoToLocal(r.taken_at),country:r.country==='SE'?'SE':'NO',...(r.animal_class?{klasse:r.animal_class}:{}),sted:r.sted||'',notes:r.notes||'',photos:(r.photos||[]).map(p=>url[p]).filter(Boolean),...(r.lat!=null?{lat:r.lat,lng:r.lng}:{})}))},
+ async add(e){const id=crypto.randomUUID(),paths=[];
+  for(const [i,p] of e.photos.entries()){const blob=await (await fetch(p)).blob(),path=`${sbUser.id}/${id}/${i+1}.jpg`;
+   const{error}=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',upsert:false});if(error)throw error;paths.push(path)}
+  const row={id,species:e.species,country:cty(e),animal_class:e.klasse||null,taken_at:new Date(e.datetime).toISOString(),sted:e.sted||null,lat:e.lat??null,lng:e.lng??null,notes:e.notes||null,photos:paths};let{error}=await sb.from('entries').insert(row);
+  if(error&&/animal_class/i.test(error.message||'')){delete row.animal_class;({error}=await sb.from('entries').insert(row));if(!error)console.warn('Kolonnen animal_class mangler: kjør supabase/schema.sql på nytt')}
+  if(error&&/country/i.test(error.message||'')){delete row.country;({error}=await sb.from('entries').insert(row));if(!error)console.warn('Kolonnen country mangler: kjør supabase/schema.sql på nytt')}
+  if(error)throw error},
+ async delete(id){const{data}=await sb.from('entries').select('photos').eq('id',id).single();
+  if(data&&data.photos&&data.photos.length)await sb.storage.from('photos').remove(data.photos);
+  const{error}=await sb.from('entries').delete().eq('id',id);if(error)throw error}};
+let Store=LocalStore;
+async function initBackend(){const c=cfg();sb=null;sbUser=null;Store=LocalStore;if(!c)return 'local';
+ try{await loadLib();sb=window.supabase.createClient(c.url,c.key,{auth:{persistSession:true,detectSessionInUrl:true}});
+  let booted=false;
+  // Lytter registreres FØR getSession, så PASSWORD_RECOVERY fra lenken ikke går tapt under oppstart.
+  sb.auth.onAuthStateChange((ev,sess)=>{const was=!!sbUser;sbUser=sess&&sess.user;Store=sbUser?SupabaseStore:LocalStore;
+   if(ev==='PASSWORD_RECOVERY'){RECOVERY=true;if(booted)setTimeout(renderRecovery,0);return}if(booted&&was!==!!sbUser&&!RECOVERY&&!IN_RECOVERY)setTab(tab)});
+  const code=new URLSearchParams(location.search).get('code');
+  if(code&&RECOVERY){try{const{error}=await sb.auth.exchangeCodeForSession(code);if(error)HASH_ERR=error}catch(e){HASH_ERR=e}}
+  const{data}=await sb.auth.getSession();sbUser=data.session&&data.session.user;booted=true;setTimeout(checkFeed,0);
+  if(sbUser){Store=SupabaseStore;return 'server'}return 'login'}catch(e){console.warn(e);return 'local'}}
+const modeText=()=>sbUser?`Lagres privat på din server · ${esc(sbUser.email)}`:(cfg()?'Ikke innlogget · lagres kun på denne enheten':'Din private fangstlogg · lagres kun på denne enheten');
+
+// ---- Deling (kun lesing) ----
+const b64u=t=>btoa(unescape(encodeURIComponent(t))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const ub64u=t=>decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/'))));
+const shareUrl=tok=>{const c=cfg();return PAGE_URL+'#del='+tok+'~'+b64u(c.url+'|'+c.key)};
+async function copyTxt(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok}}
+async function loadShares(){if(!$('shlist'))return;const{data,error}=await sb.from('shares').select('token,created_at').eq('revoked',false).order('created_at',{ascending:false});
+ if(error){$('shmsg').textContent=/shares|relation|schema/i.test(error.message||'')?'Deling er ikke satt opp ennå: kjør supabase/schema.sql på nytt.':errNo(error);$('shnew').disabled=true;return}
+ $('shlist').innerHTML=(data||[]).map(r=>`<li><span>🔗 Lenke fra ${fmt(r.created_at)}</span><span><button class="btn sec" data-cp="${r.token}" style="padding:6px 10px;margin:0">Kopier</button> <button class="btn sec" data-rv="${r.token}" style="padding:6px 10px;margin:0">Trekk tilbake</button></span></li>`).join('')||'<li>Ingen aktive delingslenker.</li>';
+ document.querySelectorAll('[data-cp]').forEach(b=>b.onclick=async()=>{$('shmsg').textContent=await copyTxt(shareUrl(b.dataset.cp))?'Lenken er kopiert. Send den til den du vil dele med.':'Kunne ikke kopiere.'});
+ document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=async()=>{if(!confirm('Trekke tilbake lenken? Den slutter å virke med en gang.'))return;const{error}=await sb.from('shares').update({revoked:true}).eq('token',b.dataset.rv);$('shmsg').textContent=error?errNo(error):'Lenken er trukket tilbake.';loadShares()})}
+function bindShares(){if(!$('shnew'))return;$('shnew').onclick=async()=>{const{data,error}=await sb.from('shares').insert({}).select('token').single();if(error){$('shmsg').textContent=errNo(error);return}
+ $('shmsg').textContent=await copyTxt(shareUrl(data.token))?'Ny lenke laget og kopiert.':'Ny lenke laget. Trykk «Kopier».';loadShares()};loadShares()}
+const SHARE=(()=>{const m=location.hash.match(/^#del=([a-f0-9]{32,})~([A-Za-z0-9_-]+)$/);if(!m)return null;try{const[u,k]=ub64u(m[2]).split('|');if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(u)||!k||keyRole(k)==='service_role')return null;return{token:m[1],url:u,key:k}}catch(e){return null}})();
+async function renderShared(){document.querySelector('nav')&&(document.querySelector('nav').style.display='none');
+ $('view').innerHTML='<div class="empty">Laster delte fangster …</div>';
+ try{await loadLib();const c=window.supabase.createClient(SHARE.url,SHARE.key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  const{data,error}=await c.rpc('shared_entries',{p_token:SHARE.token});if(error)throw error;
+  const rows=data||[];const by={};rows.forEach(r=>{const k=r.species+(r.country==='SE'?' 🇸🇪':'');(by[k]=by[k]||[]).push(r)});
+  $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Delte fangster</h2><p style="color:var(--m);font-size:14px;margin:0">Kun visning. ${rows.length} fangst${rows.length===1?'':'er'}.</p></div>`+
+   (rows.length?Object.keys(by).map(k=>`<h2>${esc(k)} <span class="cnt">${by[k].length}</span></h2><div class="grid">${by[k].map(r=>`<div class="card"><div class="ph"></div><div><b>${esc(r.species)}</b>${r.animal_class?`<small class="kl">${esc(r.animal_class)}</small>`:''}<small>${fmt(r.taken_at)}</small>${r.sted?`<div class="pin">📍 ${esc(r.sted)}</div>`:''}</div></div>`).join('')}</div>`).join(''):'<div class="empty">Ingen fangster å vise.</div>')}
+ catch(e){$('view').innerHTML='<div class="empty">Lenken virker ikke lenger (trukket tilbake eller ugyldig).</div>'}}
+
+// ---- Jaktlag ----
+const myMail=()=>(sbUser&&sbUser.email||'').toLowerCase();
+async function myTeams(){const{data,error}=await sb.from('teams').select('id,name,owner,created_at').order('created_at');if(error)throw error;return data||[]}
+async function myTeams(){const{data,error}=await sb.from('teams').select('id,name,owner,created_at').order('created_at');if(error)throw error;return data||[]}
+const teamErr=e=>/teams|team_|relation|schema|function/i.test(e&&e.message||'')?'Venner er ikke satt opp ennå: kjør supabase/schema.sql på nytt.':errNo(e);
+async function teamShareUI(x){if(!sbUser||!sb||Store!==SupabaseStore||!$('tshare'))return;let t;try{t=await myTeams()}catch(e){return}if(!t.length)return;
+ const{data:sh}=await sb.from('team_entries').select('team_id').eq('entry_id',x.id);const on=(sh||[]).length>0;
+ $('tshare').innerHTML=`<label class="kopt" style="display:flex;gap:8px;align-items:center;margin:12px 0 4px;text-transform:none;letter-spacing:0;font-size:14px;color:inherit"><input type="checkbox" id="tsv" ${on?'checked':''} style="position:static;opacity:1;width:auto">👥 Synlig for venner</label><small id="tsm" style="color:var(--m)">Fjern haken for å holde fangsten privat.</small>`;
+ $('tsv').onchange=async()=>{const c=$('tsv').checked;const r=c?await sb.from('team_entries').upsert(t.map(z=>({team_id:z.id,entry_id:x.id})),{onConflict:'team_id,entry_id',ignoreDuplicates:true}):await sb.from('team_entries').delete().eq('entry_id',x.id).eq('shared_by',sbUser.id);$('tsm').textContent=r.error?teamErr(r.error):c?'Synlig for venner.':'Privat – skjult for venner.'}}
+
+// ---- Jaktlag-fane og varsler ----
+const notifOn=()=>localStorage.getItem('jaktlogg.varsler')!=='0';
+const seenKey=()=>'jaktlogg.sett.'+(sbUser&&sbUser.id||'');let feed=[],feedSeen=null,rtCh=null;
+// Rifleskudd: syntetisert med Web Audio (ingen lydfil): kort støystøt + lavt dunk + ekko-hale.
+function shotSound(){try{const a=new Audio('assets/sounds/seierhorn.mp3');a.volume=.8;a.play().catch(synthShot)}catch(e){synthShot()}}
+function synthShot(){try{const A=window._ac=window._ac||new (window.AudioContext||window.webkitAudioContext)(),t=A.currentTime,n=A.sampleRate*1.2|0,b=A.createBuffer(1,n,A.sampleRate),d=b.getChannelData(0);
+ for(let i=0;i<n;i++){const x=i/A.sampleRate;d[i]=(Math.random()*2-1)*(x<.012?1:Math.exp(-(x-.012)*9)*.55)}
+ const src=A.createBufferSource();src.buffer=b;const f=A.createBiquadFilter();f.type='lowpass';f.frequency.setValueAtTime(5200,t);f.frequency.exponentialRampToValueAtTime(500,t+.5);
+ const g=A.createGain();g.gain.setValueAtTime(.9,t);g.gain.exponentialRampToValueAtTime(.001,t+1.15);src.connect(f).connect(g).connect(A.destination);src.start(t);
+ const o=A.createOscillator(),og=A.createGain();o.type='sine';o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(40,t+.25);og.gain.setValueAtTime(.8,t);og.gain.exponentialRampToValueAtTime(.001,t+.3);o.connect(og).connect(A.destination);o.start(t);o.stop(t+.32)}catch(e){}}
+function startRealtime(){if(rtCh||!sb||!sbUser||!sb.channel)return;try{rtCh=sb.channel('jaktlag').on('postgres_changes',{event:'INSERT',schema:'public',table:'team_entries'},p=>{if(p.new&&p.new.shared_by!==sbUser.id)checkFeed()}).subscribe()}catch(e){}}
+async function checkFeed(){const bd=$('nbadge');if(!bd)return;if(!sbUser||!sb||!notifOn()){feed=[];bd.hidden=true;if(rtCh&&sb){sb.removeChannel(rtCh);rtCh=null}return}
+ const since=localStorage.getItem(seenKey())||new Date(Date.now()-7*864e5).toISOString();
+ startRealtime();const{data,error}=await sb.rpc('team_feed',{p_since:since});feed=error?[]:(data||[]);const ids=feed.map(r=>r.team_id+r.shared_at);const isNew=feedSeen&&ids.some(i=>!feedSeen.has(i));feedSeen=new Set(ids);if(isNew){shotSound();if(tab==='lag'&&$('lback')==null)setTimeout(renderJaktlag,0)}bd.hidden=!feed.length;bd.textContent=feed.length>9?'9+':feed.length}
+setInterval(checkFeed,60000);
+async function renderJaktlag(){if(!sbUser||!sb){$('view').innerHTML='<div class="panel"><h2 style="margin-top:0">👥 Venner</h2><p style="color:var(--m)">Venner krever innlogging. Logg inn under «Innstillinger» for å legge til venner.</p><button class="btn" id="goin">Til Innstillinger</button></div>';$('goin').onclick=()=>setTab('inn');return}
+ $('view').innerHTML='<div class="empty">Laster venner …</div>';
+ const{data:pr,error:pe}=await sb.from('profiles').select('username').eq('user_id',sbUser.id).maybeSingle();
+ if(pe){$('view').innerHTML=`<div class="empty">${esc(/profiles|relation|schema/i.test(pe.message||'')?'Venner er ikke satt opp ennå: kjør supabase/schema.sql på nytt.':errNo(pe))}</div>`;return}
+ if(!pr){$('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">👥 Velg brukernavn</h2><p style="color:var(--m);font-size:14px">Venner finner deg med brukernavnet ditt. 3–24 tegn: a–z, 0–9, punktum og understrek.</p><div class="maprow"><input id="uname" placeholder="f.eks. harald.s" maxlength="24" autocapitalize="none" style="flex:1"><button class="btn" id="usave" style="width:auto;margin:0;padding:10px 14px">Lagre</button></div><p id="umsg" style="font-size:13px;color:var(--m)"></p></div>`;
+  $('usave').onclick=async()=>{const u=$('uname').value.trim().toLowerCase();if(!/^[a-z0-9_.]{3,24}$/.test(u)){$('umsg').textContent='Ugyldig brukernavn.';return}const{error}=await sb.from('profiles').insert({username:u});if(error){$('umsg').textContent=/duplicate|unique/i.test(error.message)?'Brukernavnet er tatt.':errNo(error);return}renderJaktlag()};return}
+ await checkFeed();const nf=feed;
+ const[{data:fr},{data:tm}]=await Promise.all([sb.rpc('my_friends'),sb.from('teams').select('id').eq('owner',sbUser.id).eq('name','venner').maybeSingle()]);
+ const{data:cat}=tm?await sb.rpc('team_catches',{p_team:tm.id}):{data:[]};const c=(cat||[]).filter(r=>!r.mine);
+ $('view').innerHTML=(nf.length?`<div class="panel notif"><div class="sttop"><b>🔔 Nytt fra venner</b><button class="btn sec" id="nseen" style="width:auto;margin:0;padding:4px 10px">Merk som lest</button></div>${nf.map(r=>`<small style="display:block;margin-top:6px">@${esc(r.hunter)} la inn <b>${esc(r.species)}</b>${r.animal_class?' ('+esc(r.animal_class)+')':''} · ${fmt(isoToLocal(r.shared_at))}</small>`).join('')}</div>`:'')+
+ `<div class="panel"><h2 style="margin:0">👥 Venner</h2><p style="color:var(--m);font-size:13px;margin:4px 0 8px">Du er <b>@${esc(pr.username)}</b>. Nye fangster du logger vises automatisk for vennene dine (art, type, dato, sted – aldri kartposisjon, notater eller bilder).</p>
+ <div class="maprow"><input id="fadd" placeholder="Brukernavn til venn" autocapitalize="none" style="flex:1"><button class="btn" id="faddb" style="width:auto;margin:0;padding:10px 14px">Legg til</button></div><p id="fmsg" style="font-size:13px;color:var(--m)"></p>
+ <ul style="list-style:none;padding:0;margin:0">${(fr||[]).map(f=>`<li class="sttop" style="padding:6px 0"><span>@${esc(f.username)}</span><button class="btn sec" data-unf="${esc(f.username)}" style="width:auto;margin:0;padding:4px 10px">Fjern</button></li>`).join('')||'<li style="color:var(--m);font-size:14px">Ingen venner ennå.</li>'}</ul></div>
+ <h2>Vennenes fangster</h2>${c.length?`<div class="panel">${c.map(r=>`<div class="strow"><div class="sttop"><b>${esc(r.species)}${r.animal_class?' · '+esc(r.animal_class):''}</b><span style="color:var(--m);font-size:13px">@${esc(r.hunter)}</span></div><small>${fmt(isoToLocal(r.taken_at))}${r.sted?' · '+esc(r.sted):''}</small></div>`).join('')}</div>`:'<div class="empty">Ingen fangster fra venner ennå.</div>'}<div style="height:90px"></div>`;
+ if($('nseen'))$('nseen').onclick=()=>{localStorage.setItem(seenKey(),new Date().toISOString());renderJaktlag()};
+ $('faddb').onclick=async()=>{const u=$('fadd').value.trim().replace(/^@/,'').toLowerCase();if(!u)return;const{data,error}=await sb.rpc('add_friend',{p_username:u});$('fmsg').textContent=error?errNo(error):data==='ukjent'?'Fant ingen med det brukernavnet.':data==='deg'?'Det er deg.':'';if(data==='ok')renderJaktlag()};
+ document.querySelectorAll('[data-unf]').forEach(b=>b.onclick=async()=>{if(!confirm('Fjerne @'+b.dataset.unf+' som venn? Dere slutter å se hverandres fangster.'))return;await sb.rpc('remove_friend',{p_username:b.dataset.unf});renderJaktlag()})}
+async function renderSettings(){const n=(await LocalStore.list()).length;
+ $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Innstillinger</h2>
+ ${SETUP?`<p class="muted" style="color:var(--m);font-size:14px;margin:0">Oppsett av server (kun for eieren). Verdiene lagres bare i denne nettleseren og vises aldri igjen.</p>
+ <label>Project URL<input id="su" type="password" autocomplete="off" placeholder="https://xxxx.supabase.co"></label>
+ <label>Anon / publishable key<input id="sk" type="password" autocomplete="off" placeholder="anon-nøkkel"></label>
+ <div class="maprow"><button class="btn" id="ss" style="flex:1">Lagre</button>${cfg()?'<button class="btn sec" id="sx">Koble fra</button>':''}</div><p id="smsg" style="font-size:14px;color:var(--m)"></p>`:`<p style="color:var(--m);font-size:14px;margin:0">${cfg()?'Koblet til privat lagring.':'Fangster lagres kun på denne enheten.'}</p>`}</div>
+ <div class="panel" style="margin-top:14px"><h2 style="margin-top:0">Konto</h2><p style="color:var(--m);font-size:14px;margin:0 0 10px">${modeText()}</p>
+ ${!cfg()?'':sbUser?`<form id="spf" style="margin-bottom:10px"><label>Sett passord (for innlogging uten e-postlenke)<input id="sp1" type="password" minlength="6" required autocomplete="new-password" placeholder="Nytt passord, minst 6 tegn"></label><input id="sp2" type="password" minlength="6" required autocomplete="new-password" placeholder="Gjenta passord" style="margin-top:6px"><button class="btn" style="margin-top:8px">Sett passord</button><p id="spm" style="font-size:14px;color:var(--m)"></p></form><button class="btn sec" id="lo">Logg ut</button><div class="sharebox"><h3 style="margin:0 0 4px;font-size:16px">🔔 Varsler</h3><label class="kopt" style="display:flex;gap:10px;align-items:center;text-transform:none;letter-spacing:0;font-size:14px;color:inherit"><input type="checkbox" id="nvon" style="position:static;opacity:1;width:auto"> Varsler fra venner (seierhorn når en venn legger inn en fangst)</label><button class="btn sec" id="ntest" style="margin-top:8px">🔊 Test lyden</button><small style="color:var(--m)">Varslene vises i appen (merke og liste i «Venner») mens Jaktlogg er åpen, i sanntid når Supabase Realtime er på.</small></div>${n?`<button class="btn" id="mig" style="margin-top:8px">Flytt lokale fangster til server (${n})</button>`:''}<p id="mmsg" style="font-size:14px;color:var(--m)"></p>`:'<button class="btn" id="li">Logg inn</button>'}</div>`;
+ if($('ss'))$('ss').onclick=async()=>{const url=$('su').value.trim().replace(/\/+$/,'').replace(/\/(rest|auth|storage)\/v1.*$/i,'').replace(/\/+$/,''),key=$('sk').value.trim();
+  if(!/^https:\/\/.+/.test(url)||!key){$('smsg').textContent='Fyll inn både URL og nøkkel.';return}
+  if(keyRole(key)==='service_role'){$('smsg').textContent='Dette er en service_role/secret-nøkkel. Den skal aldri brukes i appen. Bruk anon-nøkkelen.';return}
+  localStorage.setItem(CFG_KEY,JSON.stringify({url,key}));const m=await initBackend();$('hsub').textContent=modeText();if(m!=='local'&&(RECOVERY||/type=recovery/.test(location.hash)))return renderRecovery();$('smsg').textContent=m==='local'?'Kunne ikke koble til. Sjekk URL og nøkkel.':'Lagret.';if(m==='login')renderLogin();else renderSettings()};
+ if($('sx'))$('sx').onclick=async()=>{if(sb)await sb.auth.signOut().catch(()=>{});localStorage.removeItem(CFG_KEY);await initBackend();renderSettings();$('hsub').textContent=modeText()};
+ if($('li'))$('li').onclick=()=>renderLogin();
+ if($('spf'))$('spf').onsubmit=async ev=>{ev.preventDefault();const a=$('sp1').value;if(a.length<6)return $('spm').textContent='Passordet må ha minst 6 tegn.';if(a!==$('sp2').value)return $('spm').textContent='Passordene er ikke like.';$('spm').textContent='Lagrer …';const{error}=await sb.auth.updateUser({password:a});$('spm').textContent=error?errNo(error):'Passordet er satt. Du kan nå logge inn med e-post og passord.';if(!error)$('spf').reset()};
+ if(sbUser){if($('nvon')){$('nvon').checked=notifOn();$('ntest').onclick=shotSound;$('nvon').onchange=()=>{localStorage.setItem('jaktlogg.varsler',$('nvon').checked?'1':'0');checkFeed()}}}
+ if($('lo'))$('lo').onclick=async()=>{await sb.auth.signOut();sbUser=null;Store=LocalStore;renderSettings();$('hsub').textContent=modeText()};
+ if($('mig'))$('mig').onclick=async()=>{if(!confirm(`Flytte ${n} lokale fangster til serveren? De slettes fra enheten når de er lastet opp.`))return;
+  const list=await LocalStore.list();let ok=0;for(const e of list){try{$('mmsg').textContent=`Laster opp ${ok+1} av ${list.length} …`;await SupabaseStore.add(e);await LocalStore.delete(e.id);ok++}catch(err){$('mmsg').textContent=`Stoppet etter ${ok}: ${err.message}`;return}}
+  $('mmsg').textContent=`Ferdig: ${ok} fangster flyttet.`;setTimeout(renderSettings,1200)};
+ $('hsub').textContent=modeText();scrollTo(0,0)}
+
+const PAGE_URL=location.origin+location.pathname.replace(/[^/]*\.html?$/i,'').replace(/\/?$/,'/'); // app-rot, f.eks. https://haraldsandvik98-cpu.github.io/jaktapp/ (ingen egen /reset-password-rute)
+// Skjult oppsett: Supabase-feltene vises kun med #oppsett i adressen (aldri for vanlige besøkende)
+const SETUP=/^#oppsett$/.test(location.hash)||/[?&]oppsett(=|&|$)/.test(location.search);
+let HASH_ERR=(()=>{const q=new URLSearchParams(location.hash.slice(1)+'&'+location.search.slice(1));const d=q.get('error_description')||q.get('error');if(d){history.replaceState(null,'',PAGE_URL)}return d?{message:d.replace(/\+/g,' '),code:q.get('error_code')||''}:null})();
+const URLP=new URLSearchParams(location.hash.replace(/^#/,'')+'&'+location.search.replace(/^\?/,''));let RECOVERY=URLP.get('type')==='recovery'||URLP.get('rk')==='1',IN_RECOVERY=false;
+const cleanUrl=()=>{if(location.hash||location.search)history.replaceState(null,'',PAGE_URL)};
+function errNo(e){if(!e)return '';const m=((e.code||'')+' '+(e.message||e)).toLowerCase();
+ if(/rate.?limit|over_email_send_rate|too many/.test(m))return 'For mange e-poster, vent en time eller bruk passord.';
+ if(/invalid.?(login|credentials)|invalid_credentials/.test(m))return 'Feil e-post eller passord.';
+ if(/not.?confirmed|email_not_confirmed/.test(m))return 'E-posten er ikke bekreftet ennå. Trykk på lenken i bekreftelses-e-posten, eller slå av «Confirm email» i Supabase (Authentication → Providers → Email).';
+ if(/already.?(registered|exists)|user_already_exists|email_exists/.test(m))return 'Det finnes allerede en bruker med denne e-posten. Logg inn med passord, eller bruk «Glemt passord».';
+ if(/otp_expired|expired|invalid.*link|access_denied/.test(m))return 'Lenken er utløpt eller ugyldig. Logg inn med passord, eller be om en ny lenke.';
+ if(/weak|at least 6|password should/.test(m))return 'Passordet er for svakt (minst 6 tegn).';
+ if(/same_password|different from the old/.test(m))return 'Det nye passordet må være forskjellig fra det gamle.';
+ if(/signup.*disabled|signups not allowed/.test(m))return 'Nye brukere er slått av i Supabase-prosjektet.';
+ if(/failed to fetch|network/.test(m))return 'Fikk ikke kontakt med serveren. Sjekk nettet.';
+ return 'Feil: '+(e.message||e)}
+const P=(id,t)=>`<p id="${id}" style="font-size:14px;color:var(--m)">${t||''}</p>`;
+function renderLogin(mode,msg){mode=mode||'pw';if(!msg&&HASH_ERR){msg=errNo(HASH_ERR);HASH_ERR=null}
+ const tabs=`<div class="seg" style="margin:10px 0 4px"><button type="button" id="mpw" class="${mode==='pw'?'on':''}">Logg inn med passord</button><button type="button" id="msu" class="${mode==='su'?'on':''}">Ny bruker? Opprett konto</button></div>`;
+ let body='';
+ if(mode==='pw')body=`<form id="lf"><label>E-post<input id="em" type="email" required placeholder="navn@eksempel.no" autocomplete="email"></label>
+ <label>Passord<input id="pw" type="password" required autocomplete="current-password" placeholder="Passord"></label>
+ <button class="btn" style="margin-top:14px">Logg inn</button></form>
+ <p class="lk" style="font-size:14px;margin:12px 0 0;line-height:1.9"><a href="#" id="fg">Glemt passord?</a><br><a href="#" id="ml">Send innloggingslenke i stedet</a></p>`;
+ else if(mode==='su')body=`<form id="lf"><label>E-post<input id="em" type="email" required placeholder="navn@eksempel.no" autocomplete="email"></label>
+ <label>Passord (minst 6 tegn)<input id="pw" type="password" required minlength="6" autocomplete="new-password"></label>
+ <label>Gjenta passord<input id="pw2" type="password" required minlength="6" autocomplete="new-password"></label>
+ <button class="btn" style="margin-top:14px">Opprett konto</button></form>
+ <p style="font-size:13px;color:var(--m);margin:10px 0 0">Kontoen opprettes i ditt eget Supabase-prosjekt. Er «Confirm email» på, må e-posten bekreftes én gang.</p>`;
+ else if(mode==='fg')body=`<form id="lf"><p style="font-size:14px;color:var(--m);margin:6px 0 0">Vi sender en lenke for å velge nytt passord.</p><label>E-post<input id="em" type="email" required placeholder="navn@eksempel.no" autocomplete="email"></label>
+ <button class="btn" style="margin-top:14px">Send lenke for nytt passord</button></form><p class="lk" style="font-size:14px;margin:10px 0 0"><a href="#" id="bk">← Tilbake til innlogging</a></p>`;
+ else body=`<form id="lf"><p style="font-size:14px;color:var(--m);margin:6px 0 0">Du får en innloggingslenke på e-post. Supabase begrenser hvor mange e-poster som kan sendes per time.</p><label>E-post<input id="em" type="email" required placeholder="navn@eksempel.no" autocomplete="email"></label>
+ <button class="btn" style="margin-top:14px">Send innloggingslenke</button></form><p class="lk" style="font-size:14px;margin:10px 0 0"><a href="#" id="bk">← Logg inn med passord</a></p>`;
+ $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">${mode==='su'?'Opprett konto':mode==='fg'?'Glemt passord':'Logg inn'}</h2>
+ <p style="color:var(--m);font-size:14px;margin:0">Fangstene dine er private og bare synlige for deg.</p>${mode==='pw'||mode==='su'?tabs:''}${body}${P('lmsg',msg)}
+ <button class="btn sec" id="lb" style="margin-top:6px">Fortsett uten innlogging (kun på denne enheten)</button></div>`;
+ const go=(m)=>e=>{e&&e.preventDefault();renderLogin(m)};
+ if($('mpw'))$('mpw').onclick=go('pw');if($('msu'))$('msu').onclick=go('su');if($('fg'))$('fg').onclick=go('fg');if($('ml'))$('ml').onclick=go('ml');if($('bk'))$('bk').onclick=go('pw');
+ $('lb').onclick=()=>setTab('arter');
+ const say=t=>$('lmsg').textContent=t;
+ $('lf').onsubmit=async ev=>{ev.preventDefault();if(!sb){say('Supabase er ikke satt opp under Innstillinger.');return}
+  const email=$('em').value.trim(),btn=$('lf').querySelector('button');btn.disabled=true;say('Vent …');
+  try{
+   if(mode==='pw'){const{error}=await sb.auth.signInWithPassword({email,password:$('pw').value});if(error)return say(errNo(error));sbUser=(await sb.auth.getUser()).data.user;Store=SupabaseStore;$('hsub').textContent=modeText();setTab('arter')}
+   else if(mode==='su'){const pw=$('pw').value;if(pw.length<6)return say('Passordet må ha minst 6 tegn.');if(pw!==$('pw2').value)return say('Passordene er ikke like.');
+    const{data,error}=await sb.auth.signUp({email,password:pw,options:{emailRedirectTo:PAGE_URL}});if(error)return say(errNo(error));
+    if(data.session){sbUser=data.session.user;Store=SupabaseStore;$('hsub').textContent=modeText();setTab('arter')}
+    else if(data.user&&Array.isArray(data.user.identities)&&!data.user.identities.length)say(errNo({code:'user_already_exists'}));
+    else say('Kontoen er opprettet, men «Confirm email» er på i Supabase. Bekreft én gang via lenken i e-posten, og logg deretter inn med passord. For en personlig app kan du i stedet slå av «Confirm email» under Authentication → Providers → Email.')}
+   else if(mode==='fg'){const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:PAGE_URL});say(error?errNo(error):'Sjekk e-posten din og trykk på lenken for å velge nytt passord.')}
+   else{const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:PAGE_URL}});say(error?errNo(error):'Sjekk e-posten din og trykk på lenken for å logge inn.')}
+  }finally{btn.disabled=false}};scrollTo(0,0)}
+function renderRecovery(){RECOVERY=false;IN_RECOVERY=true;if(sb)cleanUrl();tab='inn';['arter','ar','st','lag','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn'));
+ if(!sb){$('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Sett nytt passord</h2><p class="muted" style="color:var(--m)">Lenken ble åpnet i en nettleser der appen ikke er koblet til Supabase. Åpne lenken i samme nettleser som du bruker appen i (ikke e-post-appens innebygde nettleser).</p><button class="btn" id="rgo">Til appen</button></div>`;$('rgo').onclick=()=>{IN_RECOVERY=false;setTab('inn')};return}
+ if(!sbUser){const m=HASH_ERR?errNo(HASH_ERR):'Lenken er utløpt eller allerede brukt.';HASH_ERR=null;IN_RECOVERY=false;return renderLogin('fg',m+' Be om en ny lenke under.')}
+ $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Sett nytt passord</h2><p style="color:var(--m);font-size:14px;margin:0 0 6px">For ${esc(sbUser.email||'')}</p><form id="rf">
+ <label>Nytt passord (minst 6 tegn)<input id="np" type="password" required minlength="6" autocomplete="new-password"></label>
+ <label>Gjenta nytt passord<input id="np2" type="password" required minlength="6" autocomplete="new-password"></label>
+ <button class="btn" id="rsave" style="margin-top:14px">Lagre nytt passord</button></form>${P('rmsg')}</div>`;
+ $('rf').onsubmit=async ev=>{ev.preventDefault();const pw=$('np').value;if(pw.length<6)return $('rmsg').textContent='Passordet må ha minst 6 tegn.';if(pw!==$('np2').value)return $('rmsg').textContent='Passordene er ikke like.';
+  $('rsave').disabled=true;$('rmsg').textContent='Lagrer …';const{error}=await sb.auth.updateUser({password:pw});$('rsave').disabled=false;
+  if(error){const m=error.message||'';return $('rmsg').textContent=/same|different from the old/i.test(m)?'Det nye passordet må være forskjellig fra det gamle.':/weak|short|characters/i.test(m)?'Passordet er for svakt. Velg et lengre passord.':/expired|invalid|session|jwt|not authenticated/i.test(m)?'Lenken er utløpt. Be om en ny under «Glemt passord?».':errNo(error)}
+  // Valgt UX: logg ut recovery-økten og gå til innlogging, så brukeren bekrefter det nye passordet.
+  $('rmsg').textContent='✅ Passordet er lagret. Logg inn med det nye passordet.';const em=sbUser&&sbUser.email;
+  setTimeout(async()=>{try{await sb.auth.signOut({scope:'local'})}catch(e){}sbUser=null;Store=LocalStore;IN_RECOVERY=false;$('hsub').textContent=modeText();renderLogin('pw','✅ Passordet er lagret. Logg inn med det nye passordet.');if(em&&$('em'))$('em').value=em},1500)};scrollTo(0,0)}
+
+$('t-inn').onclick=()=>setTab('inn');$('cr').onclick=e=>{e.preventDefault();showCredits()};
+(async()=>{if(SHARE)return renderShared();await LocalStore.migrate();const m=await initBackend();$('hsub').textContent=modeText();if(RECOVERY&&m!=='local'||RECOVERY&&!cfg())return renderRecovery();if(HASH_ERR||/access_token|[?&]code=/.test(location.hash+location.search))setTimeout(cleanUrl,0);if(HASH_ERR&&m!=='login'){const t=errNo(HASH_ERR);HASH_ERR=null;setTimeout(()=>alert(t),300)}SETUP?setTab('inn'):m==='login'?(tab='inn',['arter','ar','st','lag','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn')),renderLogin()):renderArter()})();
+</script><script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
+</body></html>
