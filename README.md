@@ -12,6 +12,10 @@ Skjermbildene i `docs/screenshots/` bruker genererte eksempelfangster (illustras
 
 Flere krav kommer – appen bygges videre etter hvert.
 
+**Fugler:** alle fuglearter under Småvilt samles i én sammenleggbar rad «Fugler» (trykk for å åpne/lukke; valget huskes i økten). I «Ny fangst» ligger de under «🐦 Fugler» i artslisten. Norge (15): Rype, Storfugl, Orrfugl, Jerpe, Fasan, Ender, Fremmede ender, Ærfugl, Gjess, Skarv, Ringdue, Rugde, Enkeltbekkasin, Gråtrost, Kråkefugler. Sverige (13): Ripa, Tjäder, Orre, Järpe, Rapphöna, Fasan, Änder, Gäss, Morkulla, Ringduva, Nötskrika, Kråkfåglar, Måsar.
+
+**Kart:** grunnkartet er OpenTopoMap (© OpenStreetMap, CC-BY-SA), som dekker Sverige; Kartverkets topokart legges oppå for Norge.
+
 ## Land, kategorier og kilder
 
 Artslistene er hentet fra offisielle kilder (lest november 2026). Appen viser **ingen jakttider** – sjekk alltid gjeldende forskrift («se gjeldende forskrift»).
@@ -28,6 +32,8 @@ Merknader: gråmåke/svartbak har ikke lenger jakttid i § 2 (endring 01.07.2026
 **Supabase:** kjør `supabase/schema.sql` på nytt (legger til kolonnen `country`). Uten kolonnen lagres fangster fortsatt, men uten land.
 
 ## Lagring på server (valgfritt, Supabase)
+
+Supabase-feltene (Project URL og nøkkel) vises **ikke** i Innstillinger for vanlige besøkende. Eieren åpner oppsettet én gang med `https://haraldsandvik98-cpu.github.io/jaktapp/#oppsett` (eller `?oppsett`) i sin egen nettleser; verdiene lagres kun i den nettleserens localStorage og vises aldri igjen (feltene er tomme og skjult).
 
 Uten oppsett lagres alt kun på enheten. Vil du ha fangstene privat på en server (og på flere enheter), kan du koble til ditt eget gratis Supabase-prosjekt:
 

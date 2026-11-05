@@ -54,6 +54,9 @@ input[type=file]{padding:10px}input[type=date]{color-scheme:dark}
 .tile.pic{aspect-ratio:1;background-size:cover;background-position:center;display:flex;flex-direction:column;justify-content:flex-end;padding:8px;text-align:left}
 .tile.pic b{margin:0;text-shadow:0 1px 3px #000}.tile.pic small{text-shadow:0 1px 3px #000;color:#d6dfd2}.tile.has.pic small{color:#a6e08a}
 .tile:not(.pic){aspect-ratio:1;display:flex;flex-direction:column;justify-content:center}.tabs button{font-size:14px;padding:11px 6px}
+.fugrow{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 10px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(20,28,22,.72);color:inherit;font:inherit;text-align:left;cursor:pointer;backdrop-filter:blur(6px)}
+.fugrow.has{border-color:rgba(143,191,106,.6)}.fugrow .fe{font-size:26px}.fugrow .ft{flex:1;display:flex;flex-direction:column}.fugrow small{color:var(--m);font-size:13px}.fugrow .chev{font-size:20px;color:var(--m)}
+.fugrow.open{border-bottom-left-radius:6px;border-bottom-right-radius:6px}.fugtiles{margin:-4px 0 14px;padding:10px;border-radius:0 0 16px 16px;background:rgba(20,28,22,.45);border:1px solid rgba(255,255,255,.1);border-top:0}
 </style></head><body><div class="app">
 <header><h1>🦌 Jaktlogg</h1><div class="sub" id="hsub">Din private fangstlogg · lagres kun på denne enheten</div></header>
 <main id="view"></main>
@@ -105,9 +108,10 @@ const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c
 const nowLocal=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
 const fmt=dt=>{const[d,t]=dt.split('T');return d.split('-').reverse().join('.')+(t?' kl. '+t:'')};
 const EMO=Object.fromEntries([...G('SE'),...G('NO')].flatMap(g=>g[1]).map(x=>[x[0],x[1]]));
-function topo(el,opt){const m=L.map(el,Object.assign({zoomControl:true},opt||{}));let fb=false;
- const kv=L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png',{maxZoom:18,attribution:'© <a href="https://www.kartverket.no/">Kartverket</a>'}).addTo(m);
- kv.on('tileerror',()=>{if(fb)return;fb=true;m.removeLayer(kv);L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenTopoMap (CC-BY-SA), © OpenStreetMap'}).addTo(m)});
+function topo(el,opt){const m=L.map(el,Object.assign({zoomControl:true},opt||{}));
+ // Grunnkart: OpenTopoMap (dekker Sverige og resten av Norden). Kartverket topo legges oppå og dekker Norge.
+ L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,maxNativeZoom:17,attribution:'© <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA), © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(m);
+ L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png',{maxZoom:18,bounds:[[57.7,4.0],[71.5,31.5]],errorTileUrl:'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',attribution:'© <a href="https://www.kartverket.no/">Kartverket</a>'}).addTo(m);
  return m}
 const NORGE=[[57.9,4.5],[71.2,31.1]];
 const icon=sp=>L.divIcon({className:'emk',html:EMO[sp]||'📍',iconSize:[34,34],iconAnchor:[17,17]});
@@ -117,14 +121,22 @@ function setTab(t){tab=t;['arter','ar','inn'].forEach(x=>$('t-'+x).classList.tog
 $('t-arter').onclick=()=>setTab('arter');$('t-ar').onclick=()=>setTab('ar');
 
 const landSeg=(id,cur)=>`<div class="seg" id="${id}">${['NO','SE'].map(l=>`<button type="button" data-l="${l}" class="${cur===l?'on':''}">${LAND[l].flagg} ${LAND[l].navn}</button>`).join('')}</div>`;
+// Fugler: alle fuglearter samles i én sammenleggbar rad under Småvilt (begge land)
+const BIRDS=new Set(['Rype','Storfugl','Orrfugl','Jerpe','Fasan','Ender','Fremmede ender','Ærfugl','Gjess','Skarv','Ringdue','Rugde','Enkeltbekkasin','Gråtrost','Kråkefugler',
+ 'Ripa','Tjäder','Orre','Järpe','Rapphöna','Änder','Gäss','Morkulla','Ringduva','Nötskrika','Kråkfåglar','Måsar']);
+const isBird=n=>BIRDS.has(n);let fugOpen=sessionStorage.getItem('jaktlogg.fugler')==='1';
 async function renderArter(){const all=(await Store.list()).filter(e=>cty(e)===land),c={};all.forEach(e=>c[e.species]=(c[e.species]||0)+1);
  const known=new Set(G().flatMap(g=>g[1].map(x=>x[0])));const other=all.filter(e=>!known.has(e.species)).length;
- $('view').innerHTML=`<div class="landrow">${landSeg('ls',land)}</div><button class="btn" id="nyf" style="margin-top:10px">+ Ny fangst</button>`+G().map(([g,list])=>`<h2>${g} <span class="cnt">${list.filter(x=>!isOther(x[0])).length} arter</span></h2><div class="tiles">`+list.map(([n,e,sl,info,tg])=>{const k=isOther(n)?other:(c[n]||0);
+ $('view').innerHTML=`<div class="landrow">${landSeg('ls',land)}</div><button class="btn" id="nyf" style="margin-top:10px">+ Ny fangst</button>`+G().map(([g,list])=>{const birds=list.filter(x=>isBird(x[0])),rest=list.filter(x=>!isBird(x[0]));const tile=([n,e,sl,info,tg])=>{const k=isOther(n)?other:(c[n]||0);
   const no=land==='SE'&&info&&!isOther(n)?info.split(/[.:]/)[0]:'';const nos=no&&no.length<22?`<span class="no">${esc(no.toLowerCase())}</span>`:'';
-  return `<button class="tile ${k?'has':''} ${sl?'pic':''}" data-s="${n}" ${sl?`style="background-image:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(5,10,6,.88)),url(assets/species/${sl}.jpg)"`:''}>${tagH(tg)}${sl?'':`<div class="e">${e}</div>`}<b>${n}</b>${nos}<small>${k?k+' fangst'+(k>1?'er':''):'Ingen ennå'}</small></button>`}).join('')+'</div>').join('')+
+  return `<button class="tile ${k?'has':''} ${sl?'pic':''}" data-s="${n}" ${sl?`style="background-image:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(5,10,6,.88)),url(assets/species/${sl}.jpg)"`:''}>${tagH(tg)}${sl?'':`<div class="e">${e}</div>`}<b>${n}</b>${nos}<small>${k?k+' fangst'+(k>1?'er':''):'Ingen ennå'}</small></button>`};
+  const bk=birds.reduce((a,x)=>a+(c[x[0]]||0),0);
+  const fug=birds.length?`<button class="fugrow ${fugOpen?'open':''} ${bk?'has':''}" id="fug" aria-expanded="${fugOpen}"><span class="fe">🐦</span><span class="ft"><b>Fugler</b><small>${birds.length} arter · ${bk?bk+' fangst'+(bk>1?'er':''):'ingen fangster ennå'}</small></span><span class="chev">${fugOpen?'▾':'▸'}</span></button>${fugOpen?`<div class="tiles fugtiles">${birds.map(tile).join('')}</div>`:''}`:'';
+  return `<h2>${g} <span class="cnt">${list.filter(x=>!isOther(x[0])).length} arter</span></h2>${fug}<div class="tiles">${rest.map(tile).join('')}</div>`}).join('')+
   `<p class="src">Arter med jakttid i ${LAND[land].navn} etter <a href="${LAND[land].kilde}">${LAND[land].kildeTxt}</a>. Jakttider og områder: se gjeldende forskrift. «Lisens»/«Kvote»/«Skyddsjakt» = kun etter vedtak.</p>`;
  document.querySelectorAll('#ls button').forEach(b=>b.onclick=()=>{setLand(b.dataset.l);renderArter()});$('nyf').onclick=()=>renderForm(null);
- document.querySelectorAll('.tile').forEach(t=>t.onclick=()=>renderSpecies(t.dataset.s));scrollTo(0,0)}
+ document.querySelectorAll('.tile').forEach(t=>t.onclick=()=>renderSpecies(t.dataset.s));
+ if($('fug'))$('fug').onclick=()=>{const y=scrollY;fugOpen=!fugOpen;sessionStorage.setItem('jaktlogg.fugler',fugOpen?'1':'0');renderArter().then(()=>scrollTo(0,y))};scrollTo(0,0)}
 
 async function renderSpecies(sp){const known=new Set(G().flatMap(g=>g[1].map(x=>x[0])));const it=ITEM(land,sp)||[];
  const list=(await Store.list()).filter(e=>cty(e)===land&&(isOther(sp)?!known.has(e.species):e.species===sp)).sort((a,b)=>b.datetime.localeCompare(a.datetime));
@@ -151,7 +163,8 @@ function renderForm(sp){pending=[];let fl=land;const back=sp?()=>renderSpecies(s
  <button class="btn" style="margin-top:16px">Lagre</button></form></div>`;
  $('bk').onclick=back;
  const fillSp=keep=>{document.querySelectorAll('#fl button').forEach(b=>b.classList.toggle('on',b.dataset.l===fl));document.querySelectorAll('#fc button').forEach(b=>b.classList.toggle('on',b.dataset.c===fc));
-  const list=G(fl).find(g=>g[0]===fc)[1];$('fsp').innerHTML=list.map(x=>`<option value="${esc(x[0])}">${esc(x[0])}${x[4]?' ('+x[4].toLowerCase()+')':''}</option>`).join('');
+  const list=G(fl).find(g=>g[0]===fc)[1];const opt=x=>`<option value="${esc(x[0])}">${esc(x[0])}${x[4]?' ('+x[4].toLowerCase()+')':''}</option>`,fb=list.filter(x=>isBird(x[0]));
+  $('fsp').innerHTML=list.filter(x=>!isBird(x[0])&&!isOther(x[0])).map(opt).join('')+(fb.length?`<optgroup label="🐦 Fugler">${fb.map(opt).join('')}</optgroup>`:'')+list.filter(x=>isOther(x[0])).map(opt).join('');
   if(keep&&list.some(x=>x[0]===keep))$('fsp').value=keep;spInfo()};
  const spInfo=()=>{const it=ITEM(fl,$('fsp').value)||[];$('otherL').style.display=isOther(it[0])?'':'none';$('other').required=isOther(it[0]);
   $('finfo').innerHTML=(it[4]&&it[4]!=='Fremmed art'?'⚠️ Kun etter vedtak (lisens/kvote/skyddsjakt). ':'')+esc(it[3]||'')};
@@ -245,16 +258,15 @@ async function initBackend(){const c=cfg();sb=null;sbUser=null;Store=LocalStore;
   if(sbUser){Store=SupabaseStore;return 'server'}return 'login'}catch(e){console.warn(e);return 'local'}}
 const modeText=()=>sbUser?`Lagres privat på din server · ${esc(sbUser.email)}`:(cfg()?'Ikke innlogget · lagres kun på denne enheten':'Din private fangstlogg · lagres kun på denne enheten');
 
-async function renderSettings(){const c=cfg()||{url:'',key:''};const n=(await LocalStore.list()).length;
+async function renderSettings(){const n=(await LocalStore.list()).length;
  $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Innstillinger</h2>
- <p class="muted" style="color:var(--m);font-size:14px;margin:0">Valgfritt: koble appen til ditt eget Supabase-prosjekt for å lagre fangstene privat på server og få dem på flere enheter. Uten dette lagres alt kun på denne enheten.</p>
- <label>Project URL<input id="su" placeholder="https://xxxx.supabase.co" value="${esc(c.url)}"></label>
- <label>Anon / publishable key<textarea id="sk" rows="3" placeholder="eyJ… eller sb_publishable_…">${esc(c.key)}</textarea></label>
- <p style="color:var(--m);font-size:12px">Bruk kun den offentlige anon-nøkkelen. Lim aldri inn service_role- eller secret-nøkkelen.</p>
- <div class="maprow"><button class="btn" id="ss" style="flex:1">Lagre</button>${cfg()?'<button class="btn sec" id="sx">Koble fra</button>':''}</div><p id="smsg" style="font-size:14px;color:var(--m)"></p></div>
+ ${SETUP?`<p class="muted" style="color:var(--m);font-size:14px;margin:0">Oppsett av server (kun for eieren). Verdiene lagres bare i denne nettleseren og vises aldri igjen.</p>
+ <label>Project URL<input id="su" type="password" autocomplete="off" placeholder="https://xxxx.supabase.co"></label>
+ <label>Anon / publishable key<input id="sk" type="password" autocomplete="off" placeholder="anon-nøkkel"></label>
+ <div class="maprow"><button class="btn" id="ss" style="flex:1">Lagre</button>${cfg()?'<button class="btn sec" id="sx">Koble fra</button>':''}</div><p id="smsg" style="font-size:14px;color:var(--m)"></p>`:`<p style="color:var(--m);font-size:14px;margin:0">${cfg()?'Koblet til privat lagring.':'Fangster lagres kun på denne enheten.'}</p>`}</div>
  <div class="panel" style="margin-top:14px"><h2 style="margin-top:0">Konto</h2><p style="color:var(--m);font-size:14px;margin:0 0 10px">${modeText()}</p>
- ${!cfg()?'<p style="font-size:14px;color:var(--m)">Legg inn Project URL og nøkkel over for å kunne logge inn.</p>':sbUser?`<form id="spf" style="margin-bottom:10px"><label>Sett passord (for innlogging uten e-postlenke)<input id="sp1" type="password" minlength="6" required autocomplete="new-password" placeholder="Nytt passord, minst 6 tegn"></label><input id="sp2" type="password" minlength="6" required autocomplete="new-password" placeholder="Gjenta passord" style="margin-top:6px"><button class="btn" style="margin-top:8px">Sett passord</button><p id="spm" style="font-size:14px;color:var(--m)"></p></form><button class="btn sec" id="lo">Logg ut</button>${n?`<button class="btn" id="mig" style="margin-top:8px">Flytt lokale fangster til server (${n})</button>`:''}<p id="mmsg" style="font-size:14px;color:var(--m)"></p>`:'<button class="btn" id="li">Logg inn</button>'}</div>`;
- $('ss').onclick=async()=>{const url=$('su').value.trim().replace(/\/+$/,'').replace(/\/(rest|auth|storage)\/v1.*$/i,'').replace(/\/+$/,''),key=$('sk').value.trim();
+ ${!cfg()?'':sbUser?`<form id="spf" style="margin-bottom:10px"><label>Sett passord (for innlogging uten e-postlenke)<input id="sp1" type="password" minlength="6" required autocomplete="new-password" placeholder="Nytt passord, minst 6 tegn"></label><input id="sp2" type="password" minlength="6" required autocomplete="new-password" placeholder="Gjenta passord" style="margin-top:6px"><button class="btn" style="margin-top:8px">Sett passord</button><p id="spm" style="font-size:14px;color:var(--m)"></p></form><button class="btn sec" id="lo">Logg ut</button>${n?`<button class="btn" id="mig" style="margin-top:8px">Flytt lokale fangster til server (${n})</button>`:''}<p id="mmsg" style="font-size:14px;color:var(--m)"></p>`:'<button class="btn" id="li">Logg inn</button>'}</div>`;
+ if($('ss'))$('ss').onclick=async()=>{const url=$('su').value.trim().replace(/\/+$/,'').replace(/\/(rest|auth|storage)\/v1.*$/i,'').replace(/\/+$/,''),key=$('sk').value.trim();
   if(!/^https:\/\/.+/.test(url)||!key){$('smsg').textContent='Fyll inn både URL og nøkkel.';return}
   if(keyRole(key)==='service_role'){$('smsg').textContent='Dette er en service_role/secret-nøkkel. Den skal aldri brukes i appen. Bruk anon-nøkkelen.';return}
   localStorage.setItem(CFG_KEY,JSON.stringify({url,key}));const m=await initBackend();$('hsub').textContent=modeText();if(m!=='local'&&(RECOVERY||/type=recovery/.test(location.hash)))return renderRecovery();$('smsg').textContent=m==='local'?'Kunne ikke koble til. Sjekk URL og nøkkel.':'Lagret.';if(m==='login')renderLogin();else renderSettings()};
@@ -268,6 +280,8 @@ async function renderSettings(){const c=cfg()||{url:'',key:''};const n=(await Lo
  $('hsub').textContent=modeText();scrollTo(0,0)}
 
 const PAGE_URL=location.origin+location.pathname.replace(/[^/]*\.html?$/i,'').replace(/\/?$/,'/'); // app-rot, f.eks. https://haraldsandvik98-cpu.github.io/jaktapp/ (ingen egen /reset-password-rute)
+// Skjult oppsett: Supabase-feltene vises kun med #oppsett i adressen (aldri for vanlige besøkende)
+const SETUP=/^#oppsett$/.test(location.hash)||/[?&]oppsett(=|&|$)/.test(location.search);
 let HASH_ERR=(()=>{const q=new URLSearchParams(location.hash.slice(1)+'&'+location.search.slice(1));const d=q.get('error_description')||q.get('error');if(d){history.replaceState(null,'',PAGE_URL)}return d?{message:d.replace(/\+/g,' '),code:q.get('error_code')||''}:null})();
 const URLP=new URLSearchParams(location.hash.replace(/^#/,'')+'&'+location.search.replace(/^\?/,''));let RECOVERY=URLP.get('type')==='recovery'||URLP.get('rk')==='1',IN_RECOVERY=false;
 const cleanUrl=()=>{if(location.hash||location.search)history.replaceState(null,'',PAGE_URL)};
@@ -280,7 +294,7 @@ function errNo(e){if(!e)return '';const m=((e.code||'')+' '+(e.message||e)).toLo
  if(/weak|at least 6|password should/.test(m))return 'Passordet er for svakt (minst 6 tegn).';
  if(/same_password|different from the old/.test(m))return 'Det nye passordet må være forskjellig fra det gamle.';
  if(/signup.*disabled|signups not allowed/.test(m))return 'Nye brukere er slått av i Supabase-prosjektet.';
- if(/failed to fetch|network/.test(m))return 'Fikk ikke kontakt med serveren. Sjekk nettet og Project URL.';
+ if(/failed to fetch|network/.test(m))return 'Fikk ikke kontakt med serveren. Sjekk nettet.';
  return 'Feil: '+(e.message||e)}
 const P=(id,t)=>`<p id="${id}" style="font-size:14px;color:var(--m)">${t||''}</p>`;
 function renderLogin(mode,msg){mode=mode||'pw';if(!msg&&HASH_ERR){msg=errNo(HASH_ERR);HASH_ERR=null}
@@ -319,7 +333,7 @@ function renderLogin(mode,msg){mode=mode||'pw';if(!msg&&HASH_ERR){msg=errNo(HASH
    else{const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:PAGE_URL}});say(error?errNo(error):'Sjekk e-posten din og trykk på lenken for å logge inn.')}
   }finally{btn.disabled=false}};scrollTo(0,0)}
 function renderRecovery(){RECOVERY=false;IN_RECOVERY=true;if(sb)cleanUrl();tab='inn';['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn'));
- if(!sb){$('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Sett nytt passord</h2><p class="muted" style="color:var(--m)">Lenken ble åpnet i en nettleser der appen ikke er koblet til Supabase. Åpne lenken i samme nettleser som du bruker appen i (ikke e-post-appens innebygde nettleser). Alternativt: legg inn Project URL og anon key under Innstillinger her – lenken i adressefeltet beholdes, så «Sett nytt passord» vises når du har lagret.</p><button class="btn" id="rgo">Til Innstillinger</button></div>`;$('rgo').onclick=()=>{IN_RECOVERY=false;setTab('inn')};return}
+ if(!sb){$('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Sett nytt passord</h2><p class="muted" style="color:var(--m)">Lenken ble åpnet i en nettleser der appen ikke er koblet til Supabase. Åpne lenken i samme nettleser som du bruker appen i (ikke e-post-appens innebygde nettleser).</p><button class="btn" id="rgo">Til appen</button></div>`;$('rgo').onclick=()=>{IN_RECOVERY=false;setTab('inn')};return}
  if(!sbUser){const m=HASH_ERR?errNo(HASH_ERR):'Lenken er utløpt eller allerede brukt.';HASH_ERR=null;IN_RECOVERY=false;return renderLogin('fg',m+' Be om en ny lenke under.')}
  $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Sett nytt passord</h2><p style="color:var(--m);font-size:14px;margin:0 0 6px">For ${esc(sbUser.email||'')}</p><form id="rf">
  <label>Nytt passord (minst 6 tegn)<input id="np" type="password" required minlength="6" autocomplete="new-password"></label>
@@ -333,5 +347,5 @@ function renderRecovery(){RECOVERY=false;IN_RECOVERY=true;if(sb)cleanUrl();tab='
   setTimeout(async()=>{try{await sb.auth.signOut({scope:'local'})}catch(e){}sbUser=null;Store=LocalStore;IN_RECOVERY=false;$('hsub').textContent=modeText();renderLogin('pw','✅ Passordet er lagret. Logg inn med det nye passordet.');if(em&&$('em'))$('em').value=em},1500)};scrollTo(0,0)}
 
 $('t-inn').onclick=()=>setTab('inn');$('cr').onclick=e=>{e.preventDefault();showCredits()};
-(async()=>{await LocalStore.migrate();const m=await initBackend();$('hsub').textContent=modeText();if(RECOVERY&&m!=='local'||RECOVERY&&!cfg())return renderRecovery();if(HASH_ERR||/access_token|[?&]code=/.test(location.hash+location.search))setTimeout(cleanUrl,0);if(HASH_ERR&&m!=='login'){const t=errNo(HASH_ERR);HASH_ERR=null;setTimeout(()=>alert(t),300)}m==='login'?(tab='inn',['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn')),renderLogin()):renderArter()})();
+(async()=>{await LocalStore.migrate();const m=await initBackend();$('hsub').textContent=modeText();if(RECOVERY&&m!=='local'||RECOVERY&&!cfg())return renderRecovery();if(HASH_ERR||/access_token|[?&]code=/.test(location.hash+location.search))setTimeout(cleanUrl,0);if(HASH_ERR&&m!=='login'){const t=errNo(HASH_ERR);HASH_ERR=null;setTimeout(()=>alert(t),300)}SETUP?setTab('inn'):m==='login'?(tab='inn',['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn')),renderLogin()):renderArter()})();
 </script></body></html>
