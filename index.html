@@ -341,7 +341,7 @@ async function renderShared(){document.querySelector('nav')&&(document.querySele
 // ---- Jaktlag ----
 const myMail=()=>(sbUser&&sbUser.email||'').toLowerCase();
 // Web push (VAPID). Lim inn den OFFENTLIGE VAPID-nøkkelen her (se README → Push-varsler). Privatnøkkelen ligger kun i Supabase secrets.
-const VAPID_PUBLIC='';
+const VAPID_PUBLIC='BMiQ3PS3ZVder5bmbT8TUmUuuz3NJqm1LR7vFXsETFcVGDqzpUdI0cI7QBvrhmMjQcUWcd992GGdMV_OBhZu8DE';
 const vapidKey=s=>{const p='='.repeat((4-s.length%4)%4),r=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(r,c=>c.charCodeAt(0))};
 async function setPush(on){try{if(!('serviceWorker'in navigator)||!('PushManager'in window))return'Push støttes ikke i denne nettleseren (på iPhone: legg appen til på Hjem-skjermen først).';
  if(!sb||!sbUser)return'Logg inn for push-varsler.';const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
