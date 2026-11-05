@@ -140,6 +140,24 @@ Ny fane **Statistikk** i bunnmenyen (mellom «År» og «Innstillinger»), med t
 - Under **Innstillinger → Varsler** finnes bryteren **Varsler fra venner**. Når en venn legger inn en fangst, spilles et seierhorn (`assets/sounds/seierhorn.mp3`) og et merke vises på fanen.
 - Krever at `supabase/schema.sql` kjøres på nytt (tabellen `profiles` og funksjonene `add_friend`, `remove_friend` og `my_friends`). Under panseret brukes jaktlag-tabellene (teams/team_members/team_entries), med én vennegruppe per bruker.
 
+## Push-varsler (web push)
+Når **Varsler fra venner** er på, abonnerer enheten på push. Vennene dine får da et varsel på telefonen med art, type og bilde av fangsten, også når appen er lukket. Er appen åpen, spilles seierhornet. På iPhone virker push bare når appen er lagt til på Hjem-skjermen (iOS 16.4 eller nyere).
+
+Oppsett (én gang):
+1. Kjør `supabase/schema.sql` på nytt. Den legger til `push_subscriptions` og `push_recipients`.
+2. Lag VAPID-nøkler med `npx web-push generate-vapid-keys`.
+3. Lim inn den **offentlige** nøkkelen i `const VAPID_PUBLIC=''` i `index.html`.
+4. Sett secrets i Supabase og deploy funksjonen (`--no-verify-jwt` fordi webhooken bruker sin egen hemmelighet):
+   ```
+   supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:deg@epost.no WEBHOOK_SECRET=<lang tilfeldig streng>
+   supabase functions deploy notify-venner --no-verify-jwt
+   ```
+5. Gå til Supabase Dashboard → Database → Webhooks → *Create*:
+   - Tabell `public.team_entries`, hendelse **Insert**, type *Supabase Edge Functions* → `notify-venner`.
+   - Legg til HTTP-header `x-webhook-secret: <samme WEBHOOK_SECRET>`.
+
+Privatnøkkelen og service-rollen brukes bare inne i edge-funksjonen og havner aldri i appen. Uten VAPID-nøkkel faller appen tilbake til varsler (med seierhorn) når den er åpen.
+
 ## Installer som app (PWA)
 
 `manifest.json` (navn Jaktlogg, start/scope `/jaktapp/`, standalone, ikoner 192/512 i `assets/icons/` laget fra `assets/logo.svg`) og `sw.js` (offline app-skall: siden, logo, bakgrunn, ikoner og Leaflet/supabase-js fra CDN). Supabase-data og karttiles caches ikke – innlogging, synk og kart krever nett.

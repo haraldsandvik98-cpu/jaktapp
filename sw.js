@@ -1,6 +1,6 @@
 // Jaktlogg service worker: enkel app-shell-cache for offline bruk.
 // Supabase-kall (innlogging, data, bilder) og karttiles caches ikke.
-const V = 'jaktlogg-v2';
+const V = 'jaktlogg-v3';
 const SHELL = ['./', './index.html', './manifest.json', './assets/logo.svg', './assets/bg.jpg',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/sounds/seierhorn.mp3'];
 const CDN = /^https:\/\/(unpkg\.com\/leaflet@|cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@)/;
@@ -27,4 +27,21 @@ self.addEventListener('fetch', e => {
       return hit || net;
     }));
   }
+});
+
+// Web push fra edge-funksjonen notify-venner
+self.addEventListener('push', e => {
+  let d = {}; try { d = e.data ? e.data.json() : {}; } catch (_) {}
+  const title = d.title || 'Ny fangst fra en venn';
+  const opt = { body: d.body || '', icon: './assets/icons/icon-192.png', badge: './assets/icons/icon-192.png',
+    image: d.image || undefined, tag: d.tag || 'venner', renotify: true, vibrate: [80, 40, 160], data: { url: './#venner' } };
+  e.waitUntil(self.registration.showNotification(title, opt).then(() =>
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => cs.forEach(c => c.postMessage({ type: 'venn-fangst' })))));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+    const c = cs.find(x => 'focus' in x); if (c) { c.postMessage({ type: 'open-venner' }); return c.focus(); }
+    return self.clients.openWindow('./#venner');
+  }));
 });

@@ -274,3 +274,24 @@ revoke all on function public.remove_friend(text) from public, anon;
 grant execute on function public.remove_friend(text) to authenticated;
 revoke all on function public.my_friends() from public, anon;
 grant execute on function public.my_friends() to authenticated;
+
+-- =====================================================================
+-- Web push: én rad per enhet/nettleser. Edge-funksjonen notify-venner leser disse.
+-- =====================================================================
+create table if not exists public.push_subscriptions (
+  endpoint   text primary key,
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  p256dh     text not null,
+  auth       text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.push_subscriptions enable row level security;
+drop policy if exists push_own on public.push_subscriptions;
+create policy push_own on public.push_subscriptions for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+-- Kun for edge-funksjonen (service_role): bruker-id-er til medlemmene i en gruppe.
+create or replace function public.push_recipients(p_team uuid) returns table(user_id uuid)
+language sql stable security definer set search_path = public as $$
+  select u.id from team_members m join auth.users u on lower(u.email) = m.email where m.team_id = p_team $$;
+revoke all on function public.push_recipients(uuid) from public, anon, authenticated;
+grant execute on function public.push_recipients(uuid) to service_role;
