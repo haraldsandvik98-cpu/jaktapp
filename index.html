@@ -257,7 +257,7 @@ async function renderSettings(){const c=cfg()||{url:'',key:''};const n=(await Lo
  $('ss').onclick=async()=>{const url=$('su').value.trim().replace(/\/+$/,'').replace(/\/(rest|auth|storage)\/v1.*$/i,'').replace(/\/+$/,''),key=$('sk').value.trim();
   if(!/^https:\/\/.+/.test(url)||!key){$('smsg').textContent='Fyll inn både URL og nøkkel.';return}
   if(keyRole(key)==='service_role'){$('smsg').textContent='Dette er en service_role/secret-nøkkel. Den skal aldri brukes i appen. Bruk anon-nøkkelen.';return}
-  localStorage.setItem(CFG_KEY,JSON.stringify({url,key}));const m=await initBackend();$('smsg').textContent=m==='local'?'Kunne ikke koble til. Sjekk URL og nøkkel.':'Lagret.';if(m==='login')renderLogin();else renderSettings()};
+  localStorage.setItem(CFG_KEY,JSON.stringify({url,key}));const m=await initBackend();$('hsub').textContent=modeText();if(m!=='local'&&(RECOVERY||/type=recovery/.test(location.hash)))return renderRecovery();$('smsg').textContent=m==='local'?'Kunne ikke koble til. Sjekk URL og nøkkel.':'Lagret.';if(m==='login')renderLogin();else renderSettings()};
  if($('sx'))$('sx').onclick=async()=>{if(sb)await sb.auth.signOut().catch(()=>{});localStorage.removeItem(CFG_KEY);await initBackend();renderSettings();$('hsub').textContent=modeText()};
  if($('li'))$('li').onclick=()=>renderLogin();
  if($('spf'))$('spf').onsubmit=async ev=>{ev.preventDefault();const a=$('sp1').value;if(a.length<6)return $('spm').textContent='Passordet må ha minst 6 tegn.';if(a!==$('sp2').value)return $('spm').textContent='Passordene er ikke like.';$('spm').textContent='Lagrer …';const{error}=await sb.auth.updateUser({password:a});$('spm').textContent=error?errNo(error):'Passordet er satt. Du kan nå logge inn med e-post og passord.';if(!error)$('spf').reset()};
@@ -269,7 +269,7 @@ async function renderSettings(){const c=cfg()||{url:'',key:''};const n=(await Lo
 
 const PAGE_URL=location.origin+location.pathname.replace(/[^/]*\.html?$/i,'').replace(/\/?$/,'/'); // app-rot, f.eks. https://haraldsandvik98-cpu.github.io/jaktapp/ (ingen egen /reset-password-rute)
 let HASH_ERR=(()=>{const q=new URLSearchParams(location.hash.slice(1)+'&'+location.search.slice(1));const d=q.get('error_description')||q.get('error');if(d){history.replaceState(null,'',PAGE_URL)}return d?{message:d.replace(/\+/g,' '),code:q.get('error_code')||''}:null})();
-let RECOVERY=/(^|[#?&])type=recovery(&|$)/.test(location.hash+location.search)||/[?&]rk=1(&|$)/.test(location.search),IN_RECOVERY=false;
+const URLP=new URLSearchParams(location.hash.replace(/^#/,'')+'&'+location.search.replace(/^\?/,''));let RECOVERY=URLP.get('type')==='recovery'||URLP.get('rk')==='1',IN_RECOVERY=false;
 const cleanUrl=()=>{if(location.hash||location.search)history.replaceState(null,'',PAGE_URL)};
 function errNo(e){if(!e)return '';const m=((e.code||'')+' '+(e.message||e)).toLowerCase();
  if(/rate.?limit|over_email_send_rate|too many/.test(m))return 'For mange e-poster, vent en time eller bruk passord.';
@@ -318,8 +318,8 @@ function renderLogin(mode,msg){mode=mode||'pw';if(!msg&&HASH_ERR){msg=errNo(HASH
    else if(mode==='fg'){const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:PAGE_URL});say(error?errNo(error):'Sjekk e-posten din og trykk på lenken for å velge nytt passord.')}
    else{const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:PAGE_URL}});say(error?errNo(error):'Sjekk e-posten din og trykk på lenken for å logge inn.')}
   }finally{btn.disabled=false}};scrollTo(0,0)}
-function renderRecovery(){RECOVERY=false;IN_RECOVERY=true;cleanUrl();tab='inn';['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn'));
- if(!sb){$('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Sett nytt passord</h2><p class="muted" style="color:var(--m)">Lenken ble åpnet i en nettleser der appen ikke er koblet til Supabase. Åpne lenken i samme nettleser som du bruker appen i, eller legg inn Project URL og anon key under Innstillinger og be om en ny lenke.</p><button class="btn" id="rgo">Til Innstillinger</button></div>`;$('rgo').onclick=()=>{IN_RECOVERY=false;setTab('inn')};return}
+function renderRecovery(){RECOVERY=false;IN_RECOVERY=true;if(sb)cleanUrl();tab='inn';['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn'));
+ if(!sb){$('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Sett nytt passord</h2><p class="muted" style="color:var(--m)">Lenken ble åpnet i en nettleser der appen ikke er koblet til Supabase. Åpne lenken i samme nettleser som du bruker appen i (ikke e-post-appens innebygde nettleser). Alternativt: legg inn Project URL og anon key under Innstillinger her – lenken i adressefeltet beholdes, så «Sett nytt passord» vises når du har lagret.</p><button class="btn" id="rgo">Til Innstillinger</button></div>`;$('rgo').onclick=()=>{IN_RECOVERY=false;setTab('inn')};return}
  if(!sbUser){const m=HASH_ERR?errNo(HASH_ERR):'Lenken er utløpt eller allerede brukt.';HASH_ERR=null;IN_RECOVERY=false;return renderLogin('fg',m+' Be om en ny lenke under.')}
  $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Sett nytt passord</h2><p style="color:var(--m);font-size:14px;margin:0 0 6px">For ${esc(sbUser.email||'')}</p><form id="rf">
  <label>Nytt passord (minst 6 tegn)<input id="np" type="password" required minlength="6" autocomplete="new-password"></label>

@@ -34,7 +34,7 @@ Uten oppsett lagres alt kun på enheten. Vil du ha fangstene privat på en serve
 1. Gå til [supabase.com](https://supabase.com), lag en gratis konto og trykk **New project**.
 2. Åpne **SQL Editor**, lim inn hele [`supabase/schema.sql`](supabase/schema.sql) og trykk **Run**. Dette lager tabellen `entries` med radnivåsikkerhet (RLS) og en privat bildebøtte `photos` der hver bruker kun når sine egne filer.
 3. **Authentication → URL Configuration** (viktig, ellers gir «Glemt passord»-lenken feilen *request path is invalid*):
-   - **Site URL:** `https://haraldsandvik98-cpu.github.io/jaktapp/` – nøyaktig slik, med `https://` og `/jaktapp/` til slutt (ikke bare `haraldsandvik98-cpu.github.io`).
+   - **Site URL:** `https://haraldsandvik98-cpu.github.io/jaktapp/` – nøyaktig slik, med `https://` og `/jaktapp/` til slutt (ikke bare `haraldsandvik98-cpu.github.io`, og **ikke** repo-adressen `https://github.com/haraldsandvik98-cpu/jaktapp/`). Sjekk: i e-posten skal lenken slutte med `redirect_to=https://haraldsandvik98-cpu.github.io/jaktapp/`.
    - **Redirect URLs:** legg til `https://haraldsandvik98-cpu.github.io/jaktapp/` og `https://haraldsandvik98-cpu.github.io/jaktapp/**`.
    - Appen sender alltid `redirectTo` = mappen den kjører fra (live: `https://haraldsandvik98-cpu.github.io/jaktapp/`, `index.html` fjernes). Det finnes ingen egen `/reset-password`-side: lenken lander på `index.html`, som viser «Sett nytt passord». Står ikke adressen i Redirect URLs, bruker Supabase Site URL i stedet.
    - Tester du lokalt, legg også til f.eks. `http://localhost:8799/**`.
