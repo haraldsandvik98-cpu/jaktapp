@@ -152,3 +152,14 @@ revoke all on function public.is_team_member(uuid) from public, anon;
 grant execute on function public.is_team_member(uuid) to authenticated;
 revoke all on function public.is_team_owner(uuid) from public, anon;
 grant execute on function public.is_team_owner(uuid) to authenticated;
+
+-- Varsler: nye fangster andre medlemmer har delt i lagene dine siden et tidspunkt.
+create or replace function public.team_feed(p_since timestamptz)
+returns table(team_id uuid, team_name text, species text, animal_class text, hunter text, shared_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select t.team_id, tm.name, e.species, e.animal_class, u.email::text, t.shared_at
+  from team_entries t join teams tm on tm.id = t.team_id join entries e on e.id = t.entry_id join auth.users u on u.id = t.shared_by
+  where public.is_team_member(t.team_id) and t.shared_by <> auth.uid() and t.shared_at > p_since
+  order by t.shared_at desc limit 50 $$;
+revoke all on function public.team_feed(timestamptz) from public, anon;
+grant execute on function public.team_feed(timestamptz) to authenticated;

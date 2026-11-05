@@ -140,9 +140,12 @@ Ny fane **Statistikk** i bunnmenyen (mellom «År» og «Innstillinger»), med t
 
 Krever innlogging og at `supabase/schema.sql` kjøres på nytt (nye tabeller `teams`, `team_members`, `team_entries`, funksjonen `team_catches`, alt med RLS: bare medlemmer ser laget).
 
-- **Opprett:** Innstillinger → «👥 Jaktlag» → skriv navn → «Opprett». Du blir lagleder.
-- **Inviter:** åpne laget → skriv e-post → «Inviter». Det sendes ingen e-post; personen logger inn i Jaktlogg med den e-postadressen, og laget dukker opp under Innstillinger. (Ingen brukernavn/profiler – kun e-post.)
+- **Egen fane:** «Jaktlag» i bunnmenyen (krever innlogging).
+- **Opprett:** Jaktlag-fanen → skriv navn → «Opprett». Du blir lagleder.
+- **Inviter:** åpne laget → skriv e-post → «Inviter». Det sendes ingen e-post; personen logger inn i Jaktlogg med den e-postadressen, og laget dukker opp i Jaktlag-fanen. (Ingen brukernavn/profiler – kun e-post.)
 - **Del fangster:** fangster er private. Åpne en fangst → «Del med jaktlag» → huk av laget. Kun art, type, dato, sted og hvem som skjøt deles (ikke kartposisjon, notater eller bilder). Fjern haken for å trekke tilbake.
 - **Hvem kan hva:** alle medlemmer ser lagets fangster og medlemsliste, og kan dele/fjerne *egne* fangster. Kun lagleder inviterer, fjerner medlemmer, fjerner andres delinger og sletter laget. Medlemmer kan forlate laget selv.
 
-![Jaktlag i Innstillinger](docs/screenshots/26-jaktlag-innstillinger.png) ![Jaktlag](docs/screenshots/27-jaktlag.png)
+- **Varsler:** Innstillinger → «🔔 Varsler» (på som standard). Når et annet medlem deler en fangst i et av lagene dine, får «Jaktlag»-fanen et rødt merke og en liste «Nytt i jaktlagene» (sjekkes ved oppstart og hvert minutt mens appen er åpen; «Merk som lest» nullstiller). Krever funksjonen `team_feed` fra schema.sql. Ingen push-/e-postvarsler.
+
+![Varsler](docs/screenshots/28-varsler-innstillinger.png) ![Jaktlag-fanen](docs/screenshots/26-jaktlag-fane.png) ![Jaktlag](docs/screenshots/27-jaktlag.png)
