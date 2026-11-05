@@ -33,7 +33,11 @@ Uten oppsett lagres alt kun på enheten. Vil du ha fangstene privat på en serve
 
 1. Gå til [supabase.com](https://supabase.com), lag en gratis konto og trykk **New project**.
 2. Åpne **SQL Editor**, lim inn hele [`supabase/schema.sql`](supabase/schema.sql) og trykk **Run**. Dette lager tabellen `entries` med radnivåsikkerhet (RLS) og en privat bildebøtte `photos` der hver bruker kun når sine egne filer.
-3. **Authentication → URL Configuration:** sett **Site URL** til `https://haraldsandvik98-cpu.github.io/jaktapp/` og legg samme adresse til under **Redirect URLs** (brukes av bekreftelses-, innloggings- og «glemt passord»-lenker).
+3. **Authentication → URL Configuration** (viktig, ellers gir «Glemt passord»-lenken feilen *request path is invalid*):
+   - **Site URL:** `https://haraldsandvik98-cpu.github.io/jaktapp/` – nøyaktig slik, med `https://` og `/jaktapp/` til slutt (ikke bare `haraldsandvik98-cpu.github.io`).
+   - **Redirect URLs:** legg til `https://haraldsandvik98-cpu.github.io/jaktapp/` og `https://haraldsandvik98-cpu.github.io/jaktapp/**`.
+   - Appen sender alltid `redirectTo` = mappen den kjører fra (live: `https://haraldsandvik98-cpu.github.io/jaktapp/`, `index.html` fjernes). Det finnes ingen egen `/reset-password`-side: lenken lander på `index.html`, som viser «Sett nytt passord». Står ikke adressen i Redirect URLs, bruker Supabase Site URL i stedet.
+   - Tester du lokalt, legg også til f.eks. `http://localhost:8799/**`.
 4. *Valgfritt, anbefalt for en personlig app:* **Authentication → Providers → Email** → slå av **Confirm email**. Da kan du opprette konto med passord og være innlogget med en gang, uten e-post.
 5. **Project Settings → API** (eller **API Keys**): kopier **Project URL** (`https://xxxx.supabase.co`, appen fjerner selv `/rest/v1` o.l.) og **anon / publishable key**. Bruk aldri `service_role`/secret-nøkkelen. Appen avviser den.
 6. Appen → **Innstillinger**: lim inn URL og nøkkel og trykk **Lagre**.

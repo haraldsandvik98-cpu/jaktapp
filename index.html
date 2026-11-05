@@ -262,7 +262,7 @@ async function renderSettings(){const c=cfg()||{url:'',key:''};const n=(await Lo
   $('mmsg').textContent=`Ferdig: ${ok} fangster flyttet.`;setTimeout(renderSettings,1200)};
  $('hsub').textContent=modeText();scrollTo(0,0)}
 
-const PAGE_URL=location.origin+location.pathname;
+const PAGE_URL=location.origin+location.pathname.replace(/[^/]*\.html?$/i,'').replace(/\/?$/,'/'); // app-rot, f.eks. https://haraldsandvik98-cpu.github.io/jaktapp/ (ingen egen /reset-password-rute)
 let HASH_ERR=(()=>{const q=new URLSearchParams(location.hash.slice(1)+'&'+location.search.slice(1));const d=q.get('error_description')||q.get('error');if(d){history.replaceState(null,'',PAGE_URL)}return d?{message:d.replace(/\+/g,' '),code:q.get('error_code')||''}:null})();
 let RECOVERY=/type=recovery/.test(location.hash);
 function errNo(e){if(!e)return '';const m=((e.code||'')+' '+(e.message||e)).toLowerCase();
