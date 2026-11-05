@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" width="900" height="360">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0e2b8"/>
+      <stop offset="45%" stop-color="#c9a24a"/>
+      <stop offset="100%" stop-color="#8a6a28"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1c2a1c"/>
+      <stop offset="100%" stop-color="#0b120c"/>
+    </linearGradient>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- badge -->
+  <rect x="24" y="36" width="852" height="288" rx="28" fill="url(#panel)" stroke="#c9a24a" stroke-width="3"/>
+  <rect x="40" y="52" width="820" height="256" rx="20" fill="none" stroke="#3a4f3a" stroke-width="1.5"/>
+
+  <!-- small antler flourishes left/right of wordmark -->
+  <g fill="none" stroke="url(#gold)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">
+    <!-- left antler -->
+    <path d="M70 180 C95 150, 115 130, 130 118"/>
+    <path d="M95 168 C105 145, 112 132, 118 122"/>
+    <path d="M108 175 C120 155, 128 142, 134 132"/>
+    <!-- right antler -->
+    <path d="M830 180 C805 150, 785 130, 770 118"/>
+    <path d="M805 168 C795 145, 788 132, 782 122"/>
+    <path d="M792 175 C780 155, 772 142, 766 132"/>
+  </g>
+
+  <!-- JAKTLOGG wordmark -->
+  <text x="450" y="205" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', Times, serif"
+        font-size="96" font-weight="700" letter-spacing="14"
+        fill="url(#gold)" filter="url(#soft)">JAKTLOGG</text>
+
+  <!-- thin gold rule under text -->
+  <line x1="210" y1="232" x2="690" y2="232" stroke="url(#gold)" stroke-width="2" opacity="0.85"/>
+  <circle cx="450" cy="232" r="4" fill="#c9a24a"/>
+
+  <!-- small subtitle cue, not product copy -->
+  <text x="450" y="268" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', Times, serif"
+        font-size="18" letter-spacing="8"
+        fill="#9bb09b">JAKT · LOGG · TROFÉ</text>
+</svg>

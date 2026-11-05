@@ -6,6 +6,12 @@ En enkel jakt-app (prototype) der du logger bilder av alt du har skutt i løpet 
 - **Arter:** oversikt over Storvilt og Småvilt for valgt land, med antall fangster per art. Trykk på en art for å se fangstene og legge til ny: sted (valgfritt), posisjon på topografisk kart (trykk eller «Bruk min posisjon»), dato og tid, flere bilder, notater. Hver art har et ekte viltbilde (se Bildekreditter).
 - **År:** velg år og land (Alle/Norge/Sverige), se totalt antall og fangstene per art, per måned eller på kart. Trykk på en fangst for bildegalleri (sveip) og sletting.
 
+**Innlogging:** Appen åpner med Logg inn / Opprett konto / Glemt passord. Supabase Project URL og publishable key er innebygd i `index.html` (ingen `#oppsett` for vanlige brukere). Økt huskes; utlogging viser innloggingsskjermen igjen.
+
+**Fugler:** Lirype er egen art (bilde `assets/species/lirype.jpg`). Rype/fjellrype bruker vinterpels-bilde.
+
+**Tilbakemelding:** Under Innstillinger kan innloggede brukere sende forbedringsønsker til tabellen `tilbakemeldinger` (kjør `supabase/schema.sql` på nytt). Eieren leser dem i SQL Editor.
+
 **Kjøre:** åpne `index.html` i en nettleser (ingen byggesteg), eller se live på https://haraldsandvik98-cpu.github.io/jaktapp/. Appen er privat: som standard lagres fangster og bilder kun på enheten (IndexedDB i nettleseren). Valgfritt kan du koble til ditt eget Supabase-prosjekt (se under).
 
 Skjermbildene i `docs/screenshots/` bruker genererte eksempelfangster (illustrasjoner, ikke ekte bilder) som kun legges inn av skjermbilde-skriptet.

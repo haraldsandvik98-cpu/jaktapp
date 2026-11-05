@@ -295,3 +295,20 @@ language sql stable security definer set search_path = public as $$
   select u.id from team_members m join auth.users u on lower(u.email) = m.email where m.team_id = p_team $$;
 revoke all on function public.push_recipients(uuid) from public, anon, authenticated;
 grant execute on function public.push_recipients(uuid) to service_role;
+
+-- =====================================================================
+-- Tilbakemeldinger: brukere kan sende inn; eieren leser i SQL Editor.
+-- =====================================================================
+create table if not exists public.tilbakemeldinger (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 4000),
+  created_at timestamptz not null default now()
+);
+alter table public.tilbakemeldinger enable row level security;
+drop policy if exists tb_insert on public.tilbakemeldinger;
+create policy tb_insert on public.tilbakemeldinger for insert to authenticated
+  with check (user_id = auth.uid());
+drop policy if exists tb_select_own on public.tilbakemeldinger;
+create policy tb_select_own on public.tilbakemeldinger for select to authenticated
+  using (user_id = auth.uid());
