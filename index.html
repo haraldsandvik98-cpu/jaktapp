@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0f1a12"><link rel="apple-touch-icon" href="assets/icons/icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Jaktlogg">
 <title>Jaktlogg</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -475,4 +475,5 @@ function renderRecovery(){RECOVERY=false;IN_RECOVERY=true;if(sb)cleanUrl();tab='
 
 $('t-inn').onclick=()=>setTab('inn');$('cr').onclick=e=>{e.preventDefault();showCredits()};
 (async()=>{if(SHARE)return renderShared();await LocalStore.migrate();const m=await initBackend();$('hsub').textContent=modeText();if(RECOVERY&&m!=='local'||RECOVERY&&!cfg())return renderRecovery();if(HASH_ERR||/access_token|[?&]code=/.test(location.hash+location.search))setTimeout(cleanUrl,0);if(HASH_ERR&&m!=='login'){const t=errNo(HASH_ERR);HASH_ERR=null;setTimeout(()=>alert(t),300)}SETUP?setTab('inn'):m==='login'?(tab='inn',['arter','ar','st','lag','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn')),renderLogin()):renderArter()})();
-</script></body></html>
+</script><script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
+</body></html>

@@ -147,3 +147,10 @@ Krever innlogging og at `supabase/schema.sql` kjøres på nytt (nye tabeller `te
 - **Varsler:** Innstillinger → «🔔 Varsler» (på som standard, «Test lyden»). Når et annet medlem legger inn en fangst i et av lagene dine, spilles et kort rifleskudd (syntetisert med Web Audio, ingen lydfil) og «Jaktlag»-fanen får et rødt merke og listen «Nytt i jaktlagene». Sanntid via Supabase Realtime på `team_entries` (schema.sql legger tabellen i publikasjonen), ellers sjekk hvert minutt. Kun mens appen er åpen; ingen push/e-post. Nettlesere kan blokkere lyd til du har trykket i appen én gang.
 
 ![Varsler](docs/screenshots/28-varsler-innstillinger.png) ![Jaktlag-fanen](docs/screenshots/26-jaktlag-fane.png) ![Jaktlag](docs/screenshots/27-jaktlag.png)
+
+## Installer som app (PWA)
+
+`manifest.json` (navn Jaktlogg, start/scope `/jaktapp/`, standalone, ikoner 192/512 i `assets/icons/` laget fra `assets/logo.svg`) og `sw.js` (offline app-skall: siden, logo, bakgrunn, ikoner og Leaflet/supabase-js fra CDN). Supabase-data og karttiles caches ikke – innlogging, synk og kart krever nett.
+
+- **iPhone (Safari):** Del-knappen → «Legg til på Hjem-skjerm».
+- **Android (Chrome):** meny ⋮ → «Installer app» / «Legg til på startskjermen».
