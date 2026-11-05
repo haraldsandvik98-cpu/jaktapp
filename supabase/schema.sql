@@ -16,6 +16,7 @@ create table if not exists public.entries (
 );
 -- Eldre prosjekter: legg til land-kolonnen (trygt å kjøre flere ganger)
 alter table public.entries add column if not exists country text not null default 'NO';
+alter table public.entries add column if not exists animal_class text;  -- kjønn/alder, f.eks. Okse/Ku/Kalv
 
 create index if not exists entries_user_taken_idx on public.entries (user_id, taken_at desc);
 
@@ -48,3 +49,27 @@ create policy "photos_update_own" on storage.objects for update to authenticated
   with check (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "photos_delete_own" on storage.objects for delete to authenticated
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ===== Deling (kun lesing) =====
+-- Eieren lager/tilbakekaller delingslenker. Besøkende med lenken kan KUN lese art, land,
+-- kjønn/alder, dato og sted via funksjonen shared_entries(token). Ingen kart-posisjon, notater eller bilder.
+create table if not exists public.shares (
+  token      text primary key default replace(gen_random_uuid()::text,'-','') || replace(gen_random_uuid()::text,'-',''),
+  owner      uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  created_at timestamptz not null default now(),
+  revoked    boolean not null default false
+);
+alter table public.shares enable row level security;
+drop policy if exists "shares_own" on public.shares;
+create policy "shares_own" on public.shares for all to authenticated using (owner = auth.uid()) with check (owner = auth.uid());
+
+create or replace function public.shared_entries(p_token text)
+returns table (species text, country text, animal_class text, taken_at timestamptz, sted text, n_photos int)
+language sql stable security definer set search_path = public as $$
+  select e.species, e.country, e.animal_class, e.taken_at, e.sted, coalesce(array_length(e.photos,1),0)
+  from public.entries e join public.shares s on s.owner = e.user_id
+  where s.token = p_token and not s.revoked and length(p_token) >= 32
+  order by e.taken_at desc limit 1000
+$$;
+revoke all on function public.shared_entries(text) from public;
+grant execute on function public.shared_entries(text) to anon, authenticated;

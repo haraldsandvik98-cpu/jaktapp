@@ -57,8 +57,15 @@ input[type=file]{padding:10px}input[type=date]{color-scheme:dark}
 .fugrow{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 10px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(20,28,22,.72);color:inherit;font:inherit;text-align:left;cursor:pointer;backdrop-filter:blur(6px)}
 .fugrow.has{border-color:rgba(143,191,106,.6)}.fugrow .fe{font-size:26px}.fugrow .ft{flex:1;display:flex;flex-direction:column}.fugrow small{color:var(--m);font-size:13px}.fugrow .chev{font-size:20px;color:var(--m)}
 .fugrow.open{border-bottom-left-radius:6px;border-bottom-right-radius:6px}.fugtiles{margin:-4px 0 14px;padding:10px;border-radius:0 0 16px 16px;background:rgba(20,28,22,.45);border:1px solid rgba(255,255,255,.1);border-top:0}
+.sheetbg{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:520px;background:#16201a;border:1px solid rgba(255,255,255,.14);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kgrid .btn{margin:0;padding:16px 8px;font-size:17px}.card small.kl{color:#bfe3a4;font-weight:600}
+.brand{display:flex;align-items:center;gap:12px}.brand img{width:44px;height:44px;flex:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.brand h1{font-size:22px;font-weight:800;letter-spacing:.18em;line-height:1.1;color:#f1ead6}.brand .sub{font-size:12px;letter-spacing:.06em;color:#c9a45c;margin-top:3px}
+.sharebox{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1)}.sharebox ul{list-style:none;padding:0;margin:8px 0}.sharebox li{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0;font-size:14px;color:var(--m)}
+.fugrow .fe img{width:44px;height:44px;border-radius:10px;object-fit:cover;display:block}
 </style></head><body><div class="app">
-<header><h1>🦌 Jaktlogg</h1><div class="sub" id="hsub">Din private fangstlogg · lagres kun på denne enheten</div></header>
+<header><div class="brand"><img src="assets/logo.svg" alt="" width="44" height="44"><div><h1>JAKTLOGG</h1><div class="sub">Samle alle dine jaktopplevelser på én plass</div></div></div><span id="hsub" hidden></span></header>
 <main id="view"></main>
 <p class="credit"><a href="#" id="cr">Bildekreditter</a> · Bakgrunn: «River in the heart of Trollheimen mountains», Jakub Fryš, <a href="https://commons.wikimedia.org/wiki/File:River_in_the_heart_of_Trollheimen_mountains.jpg">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a></p>
 <nav class="tabs"><button id="t-arter" class="on">Arter</button><button id="t-ar">År</button><button id="t-inn">Innstillinger</button></nav>
@@ -73,7 +80,7 @@ const LocalStore={_db:null,
  add(e){return this._tx('readwrite',s=>s.put(e))},
  delete(id){return this._tx('readwrite',s=>s.delete(id))},
  async migrate(){const raw=localStorage.getItem('jaktlogg.entries');if(!raw)return;
-  for(const e of JSON.parse(raw)){await this.add({id:e.id,species:e.species,datetime:e.datetime||e.date+'T12:00',sted:e.sted??e.area??'',notes:e.notes||'',photos:e.photos||(e.photo?[e.photo]:[]),...(e.country?{country:e.country}:{}),...(e.lat!=null?{lat:e.lat,lng:e.lng}:{})})}
+  for(const e of JSON.parse(raw)){await this.add({id:e.id,species:e.species,datetime:e.datetime||e.date+'T12:00',sted:e.sted??e.area??'',notes:e.notes||'',photos:e.photos||(e.photo?[e.photo]:[]),...(e.country?{country:e.country}:{}),...(e.klasse?{klasse:e.klasse}:{}),...(e.lat!=null?{lat:e.lat,lng:e.lng}:{})})}
   localStorage.removeItem('jaktlogg.entries')}};
 
 /* Arter med jakttid i FOR-2022-01-21-128 (Lovdata) */
@@ -129,9 +136,9 @@ async function renderArter(){const all=(await Store.list()).filter(e=>cty(e)===l
  const known=new Set(G().flatMap(g=>g[1].map(x=>x[0])));const other=all.filter(e=>!known.has(e.species)).length;
  $('view').innerHTML=`<div class="landrow">${landSeg('ls',land)}</div><button class="btn" id="nyf" style="margin-top:10px">+ Ny fangst</button>`+G().map(([g,list])=>{const birds=list.filter(x=>isBird(x[0])),rest=list.filter(x=>!isBird(x[0]));const tile=([n,e,sl,info,tg])=>{const k=isOther(n)?other:(c[n]||0);
   const no=land==='SE'&&info&&!isOther(n)?info.split(/[.:]/)[0]:'';const nos=no&&no.length<22?`<span class="no">${esc(no.toLowerCase())}</span>`:'';
-  return `<button class="tile ${k?'has':''} ${sl?'pic':''}" data-s="${n}" ${sl?`style="background-image:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(5,10,6,.88)),url(assets/species/${sl}.jpg)"`:''}>${tagH(tg)}${sl?'':`<div class="e">${e}</div>`}<b>${n}</b>${nos}<small>${k?k+' fangst'+(k>1?'er':''):'Ingen ennå'}</small></button>`};
+  return `<button class="tile ${k?'has':''} ${sl?'pic':''}" data-s="${n}" ${sl?`style="background-image:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(5,10,6,.88)),url(assets/species/${sl}.jpg)"`:''}>${sl?'':`<div class="e">${e}</div>`}<b>${n}</b>${nos}<small>${k?k+' fangst'+(k>1?'er':''):'Ingen ennå'}</small></button>`};
   const bk=birds.reduce((a,x)=>a+(c[x[0]]||0),0);
-  const fug=birds.length?`<button class="fugrow ${fugOpen?'open':''} ${bk?'has':''}" id="fug" aria-expanded="${fugOpen}"><span class="fe">🐦</span><span class="ft"><b>Fugler</b><small>${birds.length} arter · ${bk?bk+' fangst'+(bk>1?'er':''):'ingen fangster ennå'}</small></span><span class="chev">${fugOpen?'▾':'▸'}</span></button>${fugOpen?`<div class="tiles fugtiles">${birds.map(tile).join('')}</div>`:''}`:'';
+  const fug=birds.length?`<button class="fugrow ${fugOpen?'open':''} ${bk?'has':''}" id="fug" aria-expanded="${fugOpen}"><span class="fe"><img src="assets/species/rype.jpg" alt="Fjellrype" loading="lazy"></span><span class="ft"><b>Fugler</b><small>${birds.length} arter · ${bk?bk+' fangst'+(bk>1?'er':''):'ingen fangster ennå'}</small></span><span class="chev">${fugOpen?'▾':'▸'}</span></button>${fugOpen?`<div class="tiles fugtiles">${birds.map(tile).join('')}</div>`:''}`:'';
   return `<h2>${g} <span class="cnt">${list.filter(x=>!isOther(x[0])).length} arter</span></h2>${fug}<div class="tiles">${rest.map(tile).join('')}</div>`}).join('')+
   `<p class="src">Arter med jakttid i ${LAND[land].navn} etter <a href="${LAND[land].kilde}">${LAND[land].kildeTxt}</a>. Jakttider og områder: se gjeldende forskrift. «Lisens»/«Kvote»/«Skyddsjakt» = kun etter vedtak.</p>`;
  document.querySelectorAll('#ls button').forEach(b=>b.onclick=()=>{setLand(b.dataset.l);renderArter()});$('nyf').onclick=()=>renderForm(null);
@@ -140,11 +147,24 @@ async function renderArter(){const all=(await Store.list()).filter(e=>cty(e)===l
 
 async function renderSpecies(sp){const known=new Set(G().flatMap(g=>g[1].map(x=>x[0])));const it=ITEM(land,sp)||[];
  const list=(await Store.list()).filter(e=>cty(e)===land&&(isOther(sp)?!known.has(e.species):e.species===sp)).sort((a,b)=>b.datetime.localeCompare(a.datetime));
- $('view').innerHTML=`<button class="back" id="bk">‹ Alle arter (${LAND[land].flagg} ${LAND[land].navn})</button><h2 style="margin-top:4px">${esc(sp)} ${tagI(it[4])} <span class="cnt">${list.length}</span></h2>${it[3]?`<p style="color:var(--m);font-size:14px;margin:-4px 0 10px">${esc(it[3])}</p>`:''}${it[4]&&it[4]!=='Fremmed art'?`<div class="lic">⚠️ ${it[4]==='Kvote'?'Kvotejakt':it[4]==='Skyddsjakt'?'Skyddsjakt':'Lisensjakt/-felling'}: kun lov når myndighetene har åpnet for det. Ingen ordinær jakttid. Se gjeldende vedtak og forskrift.</div>`:''}
+ $('view').innerHTML=`<button class="back" id="bk">‹ Alle arter (${LAND[land].flagg} ${LAND[land].navn})</button><h2 style="margin-top:4px">${esc(sp)} <span class="cnt">${list.length}</span></h2>${cleanNote(it[3])?`<p style="color:var(--m);font-size:14px;margin:-4px 0 10px">${esc(cleanNote(it[3]))}</p>`:''}
  <button class="btn" id="new">+ Ny fangst</button>`+(list.length?`<div class="grid" style="margin-top:16px">${list.map(card).join('')}</div>`:`<div class="empty">Ingen fangster av ${esc(sp.toLowerCase())} logget ennå</div>`);
  $('bk').onclick=renderArter;$('new').onclick=()=>renderForm(sp);bindCards(()=>renderSpecies(sp));scrollTo(0,0)}
 
-function card(x){const n=x.photos.length;return `<div class="card" data-id="${x.id}">${n?`<img src="${x.photos[0]}" alt="">`:'<div class="ph"></div>'}${n>1?`<span class="nphoto">📷 ${n}</span>`:''}<div><b>${esc(x.species)}${cty(x)==='SE'?' 🇸🇪':''}</b><small>${fmt(x.datetime)}</small>${x.sted?`<div class="pin">📍 ${esc(x.sted)}</div>`:''}</div></div>`}
+// Kjønn/alder-klasser (sett-og-skutt-stil). Arter uten oppføring (småvilt/fugl m.m.) hopper over steget.
+const cleanNote=t=>(t||'').split(/\.\s*/).filter(p=>p&&!/fremmed|främmande|bilaga|introdusert|lisens|licens|kvot|skyddsjakt/i.test(p)).join('. ').trim();
+const KLASSER={Elg:['Okse','Ku','Kalv'],Hjort:['Bukk','Hind','Kalv'],Rådyr:['Bukk','Geit','Kje'],Villrein:['Bukk','Simle','Kalv'],Villsvin:['Galt','Purke','Unge'],
+ Dåhjort:['Bukk','Hind','Kalv'],Muflon:['Vær','Søye','Lam'],Bjørn:['Hann','Binne','Unge'],Ulv:['Hann','Hunn','Valp'],Jerv:['Hann','Hunn','Unge'],Gaupe:['Hann','Hunn','Unge'],
+ Älg:['Tjur','Ko','Kalv'],Kronhjort:['Hjort','Hind','Kalv'],Dovhjort:['Hjort','Hind','Kalv'],Rådjur:['Bock','Get','Kid'],Vildsvin:['Galt','Sugga','Kulting'],Mufflonfår:['Bagge','Tacka','Lamm'],
+ Björn:['Hane','Hona','Unge'],Varg:['Hane','Hona','Valp'],Lo:['Hane','Hona','Unge'],Järv:['Hane','Hona','Unge']};
+const ukjent=c=>c==='SE'?'Okänt':'Ukjent';
+const kl=x=>x.klasse?` · ${esc(x.klasse)}`:'';
+function pickKlasse(sp,c){const o=KLASSER[sp];if(!o)return Promise.resolve(undefined);return new Promise(res=>{const d=document.createElement('div');d.className='sheetbg';
+ d.innerHTML=`<div class="sheet" role="dialog" aria-label="Velg kjønn og alder"><h2 style="margin:0 0 4px">${esc(sp)}</h2><p style="color:var(--m);font-size:14px;margin:0 0 12px">${c==='SE'?'Kön och ålder':'Kjønn og alder'} – trykk for å lagre</p>
+ <div class="kgrid">${o.map(k=>`<button class="btn kbtn" data-k="${k}">${k}</button>`).join('')}<button class="btn sec kbtn" data-k="${ukjent(c)}">${ukjent(c)}</button></div>
+ <button class="btn sec" id="kback" style="margin-top:12px;width:100%">‹ Tilbake</button></div>`;document.body.appendChild(d);
+ const done=v=>{d.remove();res(v)};d.querySelectorAll('.kbtn').forEach(b=>b.onclick=()=>done(b.dataset.k));$('kback').onclick=()=>done(null);d.onclick=e=>{if(e.target===d)done(null)}})}
+function card(x){const n=x.photos.length;return `<div class="card" data-id="${x.id}">${n?`<img src="${x.photos[0]}" alt="">`:'<div class="ph"></div>'}${n>1?`<span class="nphoto">📷 ${n}</span>`:''}<div><b>${esc(x.species)}${cty(x)==='SE'?' 🇸🇪':''}</b>${x.klasse?`<small class="kl">${esc(x.klasse)}</small>`:''}<small>${fmt(x.datetime)}</small>${x.sted?`<div class="pin">📍 ${esc(x.sted)}</div>`:''}</div></div>`}
 function bindCards(refresh){document.querySelectorAll('.card').forEach(c=>c.onclick=()=>detail(c.dataset.id,refresh))}
 
 function renderForm(sp){pending=[];let fl=land;const back=sp?()=>renderSpecies(sp):renderArter;
@@ -163,7 +183,7 @@ function renderForm(sp){pending=[];let fl=land;const back=sp?()=>renderSpecies(s
  <button class="btn" style="margin-top:16px">Lagre</button></form></div>`;
  $('bk').onclick=back;
  const fillSp=keep=>{document.querySelectorAll('#fl button').forEach(b=>b.classList.toggle('on',b.dataset.l===fl));document.querySelectorAll('#fc button').forEach(b=>b.classList.toggle('on',b.dataset.c===fc));
-  const list=G(fl).find(g=>g[0]===fc)[1];const opt=x=>`<option value="${esc(x[0])}">${esc(x[0])}${x[4]?' ('+x[4].toLowerCase()+')':''}</option>`,fb=list.filter(x=>isBird(x[0]));
+  const list=G(fl).find(g=>g[0]===fc)[1];const opt=x=>`<option value="${esc(x[0])}">${esc(x[0])}</option>`,fb=list.filter(x=>isBird(x[0]));
   $('fsp').innerHTML=list.filter(x=>!isBird(x[0])&&!isOther(x[0])).map(opt).join('')+(fb.length?`<optgroup label="🐦 Fugler">${fb.map(opt).join('')}</optgroup>`:'')+list.filter(x=>isOther(x[0])).map(opt).join('');
   if(keep&&list.some(x=>x[0]===keep))$('fsp').value=keep;spInfo()};
  const spInfo=()=>{const it=ITEM(fl,$('fsp').value)||[];$('otherL').style.display=isOther(it[0])?'':'none';$('other').required=isOther(it[0]);
@@ -184,7 +204,8 @@ function renderForm(sp){pending=[];let fl=land;const back=sp?()=>renderSpecies(s
   $('th').querySelectorAll('button').forEach(b=>b.onclick=()=>{pending.splice(+b.dataset.i,1);th()})};
  $('photos').onchange=async e=>{for(const f of e.target.files)pending.push(await shrink(f));e.target.value='';th()};
  $('f').onsubmit=async ev=>{ev.preventDefault();const pick=$('fsp').value,species=isOther(pick)?$('other').value.trim():pick;if(!species)return;
-  try{await Store.add({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),species,country:fl,datetime:$('dt').value,sted:$('sted').value.trim(),notes:$('notes').value.trim(),photos:pending,...(ll?{lat:ll.lat,lng:ll.lng}:{})})}
+  const klasse=await pickKlasse(pick,fl);if(klasse===null)return; // Tilbake: ingenting lagres
+  try{await Store.add({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),species,country:fl,...(klasse?{klasse}:{}),datetime:$('dt').value,sted:$('sted').value.trim(),notes:$('notes').value.trim(),photos:pending,...(ll?{lat:ll.lat,lng:ll.lng}:{})})}
   catch(err){alert('Kunne ikke lagre: '+(err&&err.message||'lagringsplassen kan være full.'));return}
   setLand(fl);renderSpecies(pick)};scrollTo(0,0)}
 
@@ -192,7 +213,7 @@ function shrink(f){return new Promise(ok=>{const r=new FileReader();r.onload=()=
 
 async function detail(id,refresh){const x=(await Store.list()).find(e=>e.id===id);if(!x)return;const n=x.photos.length;
  $('detail').innerHTML=(n?`<div class="gal" id="gal">${x.photos.map(p=>`<img src="${p}" alt="">`).join('')}</div><div class="dots" id="dots">Bilde 1 av ${n}${n>1?' · sveip for flere':''}</div>`:'')+
- `<h2>${esc(x.species)}</h2><p>${LAND[cty(x)].flagg} Land: <b>${LAND[cty(x)].navn}</b></p><p>🕒 <b>${fmt(x.datetime)}</b></p><p>📍 Sted: <b>${esc(x.sted)||'–'}</b></p><p>Notater: <b>${esc(x.notes)||'–'}</b></p>${x.lat!=null?'<div class="map" id="dmap"></div>':''}
+ `<h2>${esc(x.species)}</h2><p>${LAND[cty(x)].flagg} Land: <b>${LAND[cty(x)].navn}</b></p>${x.klasse?`<p>🦌 Kjønn/alder: <b>${esc(x.klasse)}</b></p>`:''}<p>🕒 <b>${fmt(x.datetime)}</b></p><p>📍 Sted: <b>${esc(x.sted)||'–'}</b></p><p>Notater: <b>${esc(x.notes)||'–'}</b></p>${x.lat!=null?'<div class="map" id="dmap"></div>':''}
  <button class="btn danger" id="del" style="margin-top:14px">Slett fangst</button><button class="btn sec" id="close" style="margin-top:8px">Lukk</button>`;
  $('m').classList.add('open');if(n>1)$('gal').onscroll=e=>{const i=Math.round(e.target.scrollLeft/e.target.clientWidth)+1;$('dots').textContent=`Bilde ${i} av ${n} · sveip for flere`};
  if(x.lat!=null){const dm=topo('dmap',{dragging:true});dm.setView([x.lat,x.lng],12);L.marker([x.lat,x.lng],{icon:icon(x.species)}).addTo(dm)}
@@ -210,7 +231,7 @@ async function renderAr(){const all=(await Store.list()).filter(x=>arLand==='all
  $('view').innerHTML=`<div class="panel"><div class="chips">${years.map(y=>`<button data-y="${y}" class="${y===yearSel?'on':''}">${y}</button>`).join('')}</div>
  <div class="seg" id="al" style="margin:0 0 10px">${[['alle','Alle land'],['NO','🇳🇴 Norge'],['SE','🇸🇪 Sverige']].map(([k,t])=>`<button data-a="${k}" class="${arLand===k?'on':''}">${t}</button>`).join('')}</div><div class="total">${e.length} <small>fangst${e.length===1?'':'er'} i ${yearSel}</small></div>
  <div class="seg"><button id="g-art" class="${group==='art'?'on':''}">Per art</button><button id="g-mnd" class="${group==='mnd'?'on':''}">Per måned</button><button id="g-kart" class="${group==='kart'?'on':''}">Kart</button></div></div>`+(group==='kart'?'<div class="map big" id="ymap"></div><p class="credit" id="ynote"></p>':''+
- keys.map(k=>`<h2>${esc(title(k))} <span class="cnt">${g[k].length}</span></h2><div class="grid">${g[k].map(card).join('')}</div>`).join(''));
+ keys.map(k=>{const kc={};g[k].forEach(x=>{if(x.klasse)kc[x.klasse]=(kc[x.klasse]||0)+1});const ks=group==='art'&&Object.keys(kc).length?`<p style="color:var(--m);font-size:13px;margin:-6px 0 8px">${Object.entries(kc).map(([a,b])=>esc(a)+' '+b).join(' · ')}</p>`:'';return `<h2>${esc(title(k))} <span class="cnt">${g[k].length}</span></h2>${ks}<div class="grid">${g[k].map(card).join('')}</div>`}).join(''));
  document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>{yearSel=+b.dataset.y;renderAr()});document.querySelectorAll('#al button').forEach(b=>b.onclick=()=>{arLand=b.dataset.a;renderAr()});
  $('g-art').onclick=()=>{group='art';renderAr()};$('g-mnd').onclick=()=>{group='mnd';renderAr()};$('g-kart').onclick=()=>{group='kart';renderAr()};bindCards(renderAr);
  if(group==='kart'){const ym=topo('ymap'),pts=e.filter(x=>x.lat!=null);
@@ -235,11 +256,12 @@ const SupabaseStore={
  async list(){const{data,error}=await sb.from('entries').select('*').order('taken_at',{ascending:false});if(error)throw error;
   const paths=data.flatMap(r=>r.photos||[]),url={};
   if(paths.length){const{data:sig,error:e2}=await sb.storage.from('photos').createSignedUrls(paths,3600);if(e2)throw e2;sig.forEach(x=>url[x.path]=x.signedUrl)}
-  return data.map(r=>({id:r.id,species:r.species,datetime:isoToLocal(r.taken_at),country:r.country==='SE'?'SE':'NO',sted:r.sted||'',notes:r.notes||'',photos:(r.photos||[]).map(p=>url[p]).filter(Boolean),...(r.lat!=null?{lat:r.lat,lng:r.lng}:{})}))},
+  return data.map(r=>({id:r.id,species:r.species,datetime:isoToLocal(r.taken_at),country:r.country==='SE'?'SE':'NO',...(r.animal_class?{klasse:r.animal_class}:{}),sted:r.sted||'',notes:r.notes||'',photos:(r.photos||[]).map(p=>url[p]).filter(Boolean),...(r.lat!=null?{lat:r.lat,lng:r.lng}:{})}))},
  async add(e){const id=crypto.randomUUID(),paths=[];
   for(const [i,p] of e.photos.entries()){const blob=await (await fetch(p)).blob(),path=`${sbUser.id}/${id}/${i+1}.jpg`;
    const{error}=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',upsert:false});if(error)throw error;paths.push(path)}
-  const row={id,species:e.species,country:cty(e),taken_at:new Date(e.datetime).toISOString(),sted:e.sted||null,lat:e.lat??null,lng:e.lng??null,notes:e.notes||null,photos:paths};let{error}=await sb.from('entries').insert(row);
+  const row={id,species:e.species,country:cty(e),animal_class:e.klasse||null,taken_at:new Date(e.datetime).toISOString(),sted:e.sted||null,lat:e.lat??null,lng:e.lng??null,notes:e.notes||null,photos:paths};let{error}=await sb.from('entries').insert(row);
+  if(error&&/animal_class/i.test(error.message||'')){delete row.animal_class;({error}=await sb.from('entries').insert(row));if(!error)console.warn('Kolonnen animal_class mangler: kjør supabase/schema.sql på nytt')}
   if(error&&/country/i.test(error.message||'')){delete row.country;({error}=await sb.from('entries').insert(row));if(!error)console.warn('Kolonnen country mangler: kjør supabase/schema.sql på nytt')}
   if(error)throw error},
  async delete(id){const{data}=await sb.from('entries').select('photos').eq('id',id).single();
@@ -258,6 +280,27 @@ async function initBackend(){const c=cfg();sb=null;sbUser=null;Store=LocalStore;
   if(sbUser){Store=SupabaseStore;return 'server'}return 'login'}catch(e){console.warn(e);return 'local'}}
 const modeText=()=>sbUser?`Lagres privat på din server · ${esc(sbUser.email)}`:(cfg()?'Ikke innlogget · lagres kun på denne enheten':'Din private fangstlogg · lagres kun på denne enheten');
 
+// ---- Deling (kun lesing) ----
+const b64u=t=>btoa(unescape(encodeURIComponent(t))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const ub64u=t=>decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/'))));
+const shareUrl=tok=>{const c=cfg();return PAGE_URL+'#del='+tok+'~'+b64u(c.url+'|'+c.key)};
+async function copyTxt(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok}}
+async function loadShares(){if(!$('shlist'))return;const{data,error}=await sb.from('shares').select('token,created_at').eq('revoked',false).order('created_at',{ascending:false});
+ if(error){$('shmsg').textContent=/shares|relation|schema/i.test(error.message||'')?'Deling er ikke satt opp ennå: kjør supabase/schema.sql på nytt.':errNo(error);$('shnew').disabled=true;return}
+ $('shlist').innerHTML=(data||[]).map(r=>`<li><span>🔗 Lenke fra ${fmt(r.created_at)}</span><span><button class="btn sec" data-cp="${r.token}" style="padding:6px 10px;margin:0">Kopier</button> <button class="btn sec" data-rv="${r.token}" style="padding:6px 10px;margin:0">Trekk tilbake</button></span></li>`).join('')||'<li>Ingen aktive delingslenker.</li>';
+ document.querySelectorAll('[data-cp]').forEach(b=>b.onclick=async()=>{$('shmsg').textContent=await copyTxt(shareUrl(b.dataset.cp))?'Lenken er kopiert. Send den til den du vil dele med.':'Kunne ikke kopiere.'});
+ document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=async()=>{if(!confirm('Trekke tilbake lenken? Den slutter å virke med en gang.'))return;const{error}=await sb.from('shares').update({revoked:true}).eq('token',b.dataset.rv);$('shmsg').textContent=error?errNo(error):'Lenken er trukket tilbake.';loadShares()})}
+function bindShares(){if(!$('shnew'))return;$('shnew').onclick=async()=>{const{data,error}=await sb.from('shares').insert({}).select('token').single();if(error){$('shmsg').textContent=errNo(error);return}
+ $('shmsg').textContent=await copyTxt(shareUrl(data.token))?'Ny lenke laget og kopiert.':'Ny lenke laget. Trykk «Kopier».';loadShares()};loadShares()}
+const SHARE=(()=>{const m=location.hash.match(/^#del=([a-f0-9]{32,})~([A-Za-z0-9_-]+)$/);if(!m)return null;try{const[u,k]=ub64u(m[2]).split('|');if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(u)||!k||keyRole(k)==='service_role')return null;return{token:m[1],url:u,key:k}}catch(e){return null}})();
+async function renderShared(){document.querySelector('nav')&&(document.querySelector('nav').style.display='none');
+ $('view').innerHTML='<div class="empty">Laster delte fangster …</div>';
+ try{await loadLib();const c=window.supabase.createClient(SHARE.url,SHARE.key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  const{data,error}=await c.rpc('shared_entries',{p_token:SHARE.token});if(error)throw error;
+  const rows=data||[];const by={};rows.forEach(r=>{const k=r.species+(r.country==='SE'?' 🇸🇪':'');(by[k]=by[k]||[]).push(r)});
+  $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Delte fangster</h2><p style="color:var(--m);font-size:14px;margin:0">Kun visning. ${rows.length} fangst${rows.length===1?'':'er'}.</p></div>`+
+   (rows.length?Object.keys(by).map(k=>`<h2>${esc(k)} <span class="cnt">${by[k].length}</span></h2><div class="grid">${by[k].map(r=>`<div class="card"><div class="ph"></div><div><b>${esc(r.species)}</b>${r.animal_class?`<small class="kl">${esc(r.animal_class)}</small>`:''}<small>${fmt(r.taken_at)}</small>${r.sted?`<div class="pin">📍 ${esc(r.sted)}</div>`:''}</div></div>`).join('')}</div>`).join(''):'<div class="empty">Ingen fangster å vise.</div>')}
+ catch(e){$('view').innerHTML='<div class="empty">Lenken virker ikke lenger (trukket tilbake eller ugyldig).</div>'}}
 async function renderSettings(){const n=(await LocalStore.list()).length;
  $('view').innerHTML=`<div class="panel"><h2 style="margin-top:0">Innstillinger</h2>
  ${SETUP?`<p class="muted" style="color:var(--m);font-size:14px;margin:0">Oppsett av server (kun for eieren). Verdiene lagres bare i denne nettleseren og vises aldri igjen.</p>
@@ -265,7 +308,7 @@ async function renderSettings(){const n=(await LocalStore.list()).length;
  <label>Anon / publishable key<input id="sk" type="password" autocomplete="off" placeholder="anon-nøkkel"></label>
  <div class="maprow"><button class="btn" id="ss" style="flex:1">Lagre</button>${cfg()?'<button class="btn sec" id="sx">Koble fra</button>':''}</div><p id="smsg" style="font-size:14px;color:var(--m)"></p>`:`<p style="color:var(--m);font-size:14px;margin:0">${cfg()?'Koblet til privat lagring.':'Fangster lagres kun på denne enheten.'}</p>`}</div>
  <div class="panel" style="margin-top:14px"><h2 style="margin-top:0">Konto</h2><p style="color:var(--m);font-size:14px;margin:0 0 10px">${modeText()}</p>
- ${!cfg()?'':sbUser?`<form id="spf" style="margin-bottom:10px"><label>Sett passord (for innlogging uten e-postlenke)<input id="sp1" type="password" minlength="6" required autocomplete="new-password" placeholder="Nytt passord, minst 6 tegn"></label><input id="sp2" type="password" minlength="6" required autocomplete="new-password" placeholder="Gjenta passord" style="margin-top:6px"><button class="btn" style="margin-top:8px">Sett passord</button><p id="spm" style="font-size:14px;color:var(--m)"></p></form><button class="btn sec" id="lo">Logg ut</button>${n?`<button class="btn" id="mig" style="margin-top:8px">Flytt lokale fangster til server (${n})</button>`:''}<p id="mmsg" style="font-size:14px;color:var(--m)"></p>`:'<button class="btn" id="li">Logg inn</button>'}</div>`;
+ ${!cfg()?'':sbUser?`<form id="spf" style="margin-bottom:10px"><label>Sett passord (for innlogging uten e-postlenke)<input id="sp1" type="password" minlength="6" required autocomplete="new-password" placeholder="Nytt passord, minst 6 tegn"></label><input id="sp2" type="password" minlength="6" required autocomplete="new-password" placeholder="Gjenta passord" style="margin-top:6px"><button class="btn" style="margin-top:8px">Sett passord</button><p id="spm" style="font-size:14px;color:var(--m)"></p></form><button class="btn sec" id="lo">Logg ut</button><div class="sharebox"><h3 style="margin:0 0 4px;font-size:16px">Del fangster</h3><p style="color:var(--m);font-size:13px;margin:0">Lag en lenke som lar andre <b>se</b> fangstene dine (art, kjønn/alder, dato, sted). Ikke kartposisjon, notater eller bilder. Kan trekkes tilbake når som helst.</p><button class="btn" id="shnew" style="margin-top:8px">Lag delingslenke</button><ul id="shlist"></ul><p id="shmsg" style="font-size:13px;color:var(--m)"></p></div>${n?`<button class="btn" id="mig" style="margin-top:8px">Flytt lokale fangster til server (${n})</button>`:''}<p id="mmsg" style="font-size:14px;color:var(--m)"></p>`:'<button class="btn" id="li">Logg inn</button>'}</div>`;
  if($('ss'))$('ss').onclick=async()=>{const url=$('su').value.trim().replace(/\/+$/,'').replace(/\/(rest|auth|storage)\/v1.*$/i,'').replace(/\/+$/,''),key=$('sk').value.trim();
   if(!/^https:\/\/.+/.test(url)||!key){$('smsg').textContent='Fyll inn både URL og nøkkel.';return}
   if(keyRole(key)==='service_role'){$('smsg').textContent='Dette er en service_role/secret-nøkkel. Den skal aldri brukes i appen. Bruk anon-nøkkelen.';return}
@@ -273,6 +316,7 @@ async function renderSettings(){const n=(await LocalStore.list()).length;
  if($('sx'))$('sx').onclick=async()=>{if(sb)await sb.auth.signOut().catch(()=>{});localStorage.removeItem(CFG_KEY);await initBackend();renderSettings();$('hsub').textContent=modeText()};
  if($('li'))$('li').onclick=()=>renderLogin();
  if($('spf'))$('spf').onsubmit=async ev=>{ev.preventDefault();const a=$('sp1').value;if(a.length<6)return $('spm').textContent='Passordet må ha minst 6 tegn.';if(a!==$('sp2').value)return $('spm').textContent='Passordene er ikke like.';$('spm').textContent='Lagrer …';const{error}=await sb.auth.updateUser({password:a});$('spm').textContent=error?errNo(error):'Passordet er satt. Du kan nå logge inn med e-post og passord.';if(!error)$('spf').reset()};
+ if(sbUser)bindShares();
  if($('lo'))$('lo').onclick=async()=>{await sb.auth.signOut();sbUser=null;Store=LocalStore;renderSettings();$('hsub').textContent=modeText()};
  if($('mig'))$('mig').onclick=async()=>{if(!confirm(`Flytte ${n} lokale fangster til serveren? De slettes fra enheten når de er lastet opp.`))return;
   const list=await LocalStore.list();let ok=0;for(const e of list){try{$('mmsg').textContent=`Laster opp ${ok+1} av ${list.length} …`;await SupabaseStore.add(e);await LocalStore.delete(e.id);ok++}catch(err){$('mmsg').textContent=`Stoppet etter ${ok}: ${err.message}`;return}}
@@ -347,5 +391,5 @@ function renderRecovery(){RECOVERY=false;IN_RECOVERY=true;if(sb)cleanUrl();tab='
   setTimeout(async()=>{try{await sb.auth.signOut({scope:'local'})}catch(e){}sbUser=null;Store=LocalStore;IN_RECOVERY=false;$('hsub').textContent=modeText();renderLogin('pw','✅ Passordet er lagret. Logg inn med det nye passordet.');if(em&&$('em'))$('em').value=em},1500)};scrollTo(0,0)}
 
 $('t-inn').onclick=()=>setTab('inn');$('cr').onclick=e=>{e.preventDefault();showCredits()};
-(async()=>{await LocalStore.migrate();const m=await initBackend();$('hsub').textContent=modeText();if(RECOVERY&&m!=='local'||RECOVERY&&!cfg())return renderRecovery();if(HASH_ERR||/access_token|[?&]code=/.test(location.hash+location.search))setTimeout(cleanUrl,0);if(HASH_ERR&&m!=='login'){const t=errNo(HASH_ERR);HASH_ERR=null;setTimeout(()=>alert(t),300)}SETUP?setTab('inn'):m==='login'?(tab='inn',['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn')),renderLogin()):renderArter()})();
+(async()=>{if(SHARE)return renderShared();await LocalStore.migrate();const m=await initBackend();$('hsub').textContent=modeText();if(RECOVERY&&m!=='local'||RECOVERY&&!cfg())return renderRecovery();if(HASH_ERR||/access_token|[?&]code=/.test(location.hash+location.search))setTimeout(cleanUrl,0);if(HASH_ERR&&m!=='login'){const t=errNo(HASH_ERR);HASH_ERR=null;setTimeout(()=>alert(t),300)}SETUP?setTab('inn'):m==='login'?(tab='inn',['arter','ar','inn'].forEach(x=>$('t-'+x).classList.toggle('on',x==='inn')),renderLogin()):renderArter()})();
 </script></body></html>

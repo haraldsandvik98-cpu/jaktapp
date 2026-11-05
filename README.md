@@ -76,7 +76,7 @@ Alle fra Wikimedia Commons, beskåret til kvadrat og komprimert (endret).
 | Rådyrbukk | [Capreolus capreolus Wien Zentralfriedhof 20221021 06.jpg](https://commons.wikimedia.org/wiki/File:Capreolus_capreolus_Wien_Zentralfriedhof_20221021_06.jpg) | Uoaei1 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | Villsvin | [Wild boar (Sus scrofa vittatus) juvenile.jpg](https://commons.wikimedia.org/wiki/File:Wild_boar_(Sus_scrofa_vittatus)_juvenile.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | Villrein | [Rangifer tarandus fennicus 245142390.jpg](https://commons.wikimedia.org/wiki/File:Rangifer_tarandus_fennicus_245142390.jpg) | Pentti Impiö | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) |
-| Rype | [Rock ptarmigan (Lagopus muta islandorum) female breeding Botnsvatn.jpg](https://commons.wikimedia.org/wiki/File:Rock_ptarmigan_(Lagopus_muta_islandorum)_female_breeding_Botnsvatn.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| Rype / Fugler-rad (fjellrype) | [Rock ptarmigan (Lagopus muta islandorum) female breeding Botnsvatn.jpg](https://commons.wikimedia.org/wiki/File:Rock_ptarmigan_(Lagopus_muta_islandorum)_female_breeding_Botnsvatn.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | Hare | [Mountain hare (Lepus timidus) Oppdal.jpg](https://commons.wikimedia.org/wiki/File:Mountain_hare_(Lepus_timidus)_Oppdal.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | Storfugl | [Tetrao urogallus Richard Bartz.jpg](https://commons.wikimedia.org/wiki/File:Tetrao_urogallus_Richard_Bartz.jpg) | Richard Bartz, Munich aka Makro Freak | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) |
 | Orrfugl | [Orrtuppen.jpg](https://commons.wikimedia.org/wiki/File:Orrtuppen.jpg) | Spjutkastare | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
@@ -114,3 +114,15 @@ Alle fra Wikimedia Commons, beskåret til kvadrat og komprimert (endret).
 | Rapphöna (rapphøne) | [Perdix perdix hispaniensis MHNT PHAS 1996 18.jpg](https://commons.wikimedia.org/wiki/File:Perdix_perdix_hispaniensis_MHNT_PHAS_1996_18.jpg) | Roger Culos | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | Säl (sel) | [Focas grises (Halichoerus grypus), playa de Horsey, Norfolk, Inglaterra, 2022-11-20, DD 11.jpg](https://commons.wikimedia.org/wiki/File:Focas_grises_(Halichoerus_grypus),_playa_de_Horsey,_Norfolk,_Inglaterra,_2022-11-20,_DD_11.jpg) | Diego Delso | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | Nötskrika (nøtteskrike) | [Alakarga - Eurasian Jay - Garrulus glandarius 03.jpg](https://commons.wikimedia.org/wiki/File:Alakarga_-_Eurasian_Jay_-_Garrulus_glandarius_03.jpg) | Zeynel Cebeci | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+
+## Nytt: kjønn/alder, deling, logo
+
+**Kjønn/alder:** Etter «Lagre» i «Ny fangst» kommer et valgark for storvilt (ett trykk velger og lagrer, «Tilbake» avbryter). Vises på kort, detaljside og i År-oversikten. Elg: Okse/Ku/Kalv · Hjort/Dåhjort: Bukk/Hind/Kalv · Rådyr: Bukk/Geit/Kje · Villrein: Bukk/Simle/Kalv · Villsvin: Galt/Purke/Unge · Muflon: Vær/Søye/Lam · Bjørn: Hann/Binne/Unge · Ulv: Hann/Hunn/Valp · Jerv/Gaupe: Hann/Hunn/Unge. Sverige: Älg: Tjur/Ko/Kalv · Kronhjort/Dovhjort: Hjort/Hind/Kalv · Rådjur: Bock/Get/Kid · Vildsvin: Galt/Sugga/Kulting · Mufflonfår: Bagge/Tacka/Lamm · Björn/Lo/Järv: Hane/Hona/Unge · Varg: Hane/Hona/Valp. Alle har også Ukjent/Okänt. Småvilt/fugl får ikke valgarket.
+
+![Kjønn/alder](docs/screenshots/21-kjonn-alder-valg.png)
+
+**Deling (kun visning):** Kjør `supabase/schema.sql` på nytt i Supabase → SQL Editor (legger til kolonnen `animal_class`, tabellen `shares` med RLS og funksjonen `shared_entries`). Logg inn → Innstillinger → «Del fangster» → «Lag delingslenke» (kopieres automatisk). «Kopier» / «Trekk tilbake» per lenke. Mottakeren åpner lenken og ser en skrivebeskyttet liste (art, kjønn/alder, dato, sted). Kartposisjon, notater og bilder deles ikke. Ingen kan skrive via lenken.
+
+![Del](docs/screenshots/22-del-fangster.png) ![Delt visning](docs/screenshots/23-delt-visning.png)
+
+**Logo:** `assets/logo.svg` (gevir + trådkors). Fugler-raden bruker fjellrype-bildet `assets/species/rype.jpg` (kreditert under Bildekreditter). Merkelapper for fremmed art/lisens/kvote/skyddsjakt er fjernet fra artsrutene.

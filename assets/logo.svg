@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Jaktlogg">
+  <circle cx="32" cy="32" r="30" fill="#14201a" stroke="#c9a45c" stroke-width="2.5"/>
+  <circle cx="32" cy="38" r="9" fill="none" stroke="#e8e2d0" stroke-width="2"/>
+  <path d="M32 25v6M32 45v6M19 38h6M39 38h6" stroke="#e8e2d0" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="32" cy="38" r="1.6" fill="#c9a45c"/>
+  <g fill="none" stroke="#c9a45c" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28 27C24 22 21 17 21 10M21 17l-5-3M23 21l-6 1M21 13l-3-6"/>
+    <path d="M36 27C40 22 43 17 43 10M43 17l5-3M41 21l6 1M43 13l3-6"/>
+  </g>
+</svg>
